@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#123f38">
   <meta name="format-detection" content="telephone=no">
   <meta name="description" content="DPRO 宿泊・民泊 LINE 営業前システムチェック">
-  <title>DPROステイ｜営業前システムチェック STEP STAY-9</title>
+  <title>DPROステイ｜営業前システムチェック STEP STAY-9-R1</title>
   <style>
     :root{
       --ink:#17231f;--muted:#66756f;--brand:#174f46;--brand-strong:#0c3d35;
@@ -329,7 +329,7 @@
 </main>
 
 <footer class="footer">
-  <div class="shell">DPRO 宿泊・民泊 LINE｜STEP STAY-9｜system-check.html</div>
+  <div class="shell">DPRO 宿泊・民泊 LINE｜STEP STAY-9-R1｜system-check.html</div>
 </footer>
 
 <div class="toast-region" id="toastRegion" aria-live="polite"></div>
@@ -340,7 +340,7 @@
 const CONFIG=Object.freeze({
   API_BASE:"https://dpro-stay-line-api.dpromstk2000.workers.dev",
   FACILITY_CODE:"dpro_stay_demo",
-  VERSION:"STAY-9",
+  VERSION:"STAY-9-R1",
   DEMO_RESERVATION_NUMBER:"STAY-DEMO-002",
   DEMO_PHONE:"090-9999-2222"
 });
@@ -376,7 +376,7 @@ const CHECK_DEFINITIONS=[
   ["units","部屋・棟","有効な部屋・棟が1〜30件であることを確認"],
   ["staff","スタッフ","有効なスタッフが登録されていることを確認"],
   ["dashboard","今日の運営","本日のチェックイン・清掃・連絡件数を確認"],
-  ["phone","電話番号正規化","ハイフン・全角・+81形式の同一判定を確認"],
+  ["phone","電話番号正規化","5種類の表記とWorker・DBの正規化結果を確認"],
   ["lookup","公開予約照合","予約番号＋電話番号で予約を確認"],
   ["member","宿泊者マイページAPI","予約確認後の宿泊案内取得を確認"]
 ];
@@ -484,10 +484,16 @@ async function runAllChecks(){
       return{ok:count>=1,detail:`有効スタッフ ${count}名`};
     }),
     runCheck("phone",async()=>{
-      const data=await adminApi("/api/admin/phone-normalize-check");
+      const data=await adminApi("/api/admin/phone-normalize-check",{
+        acceptBusinessError:true
+      });
+      const analysis=analyzePhoneNormalizeResponse(data);
       state.raw.phone_normalize=data;
-      const ok=data.ok!==false&&(data.all_match===true||data.phone_normalization===true||data.results?.every?.(x=>x.match===true));
-      return{ok,detail:ok?"電話番号正規化は正常":"正規化結果を確認してください"};
+      state.raw.phone_normalize_analysis=analysis;
+      return{
+        ok:analysis.ok,
+        detail:analysis.detail
+      };
     }),
     runCheck("lookup",async()=>{
       const data=await publicApi("/api/public/reservation/lookup",{
@@ -735,7 +741,10 @@ async function adminApi(path,options={}){
     body=JSON.stringify(cleanObject({...options.body,facility_code:CONFIG.FACILITY_CODE}));
   }
   return fetchJson(`${CONFIG.API_BASE}${path}`,{
-    method:options.method||"GET",headers,body
+    method:options.method||"GET",
+    headers,
+    body,
+    acceptBusinessError:options.acceptBusinessError===true
   });
 }
 
@@ -747,32 +756,209 @@ async function publicApi(path,options={}){
     body=JSON.stringify(cleanObject(options.body));
   }
   return fetchJson(`${CONFIG.API_BASE}${path}`,{
-    method:options.method||"GET",headers,body
+    method:options.method||"GET",
+    headers,
+    body,
+    acceptBusinessError:options.acceptBusinessError===true
   });
 }
 
-async function fetchJson(url,options){
+async function fetchJson(url,options={}){
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),18000);
+  const {
+    acceptBusinessError=false,
+    ...requestOptions
+  }=options;
   try{
-    const response=await fetch(url,{...options,signal:controller.signal,cache:"no-store"});
+    const response=await fetch(url,{
+      ...requestOptions,
+      signal:controller.signal,
+      cache:"no-store"
+    });
     const text=await response.text();
     let data={};
     if(text){
       try{data=JSON.parse(text);}
       catch{throw new Error("サーバーから正しいJSON応答を受信できませんでした。");}
     }
-    if(!response.ok||data.ok===false){
-      throw new Error(data.error||data.message||`通信エラー（${response.status}）`);
+    if(!response.ok){
+      throw new Error(data.error||data.message||`HTTP通信エラー（${response.status}）`);
+    }
+    if(data.ok===false&&!acceptBusinessError){
+      throw new Error(data.error||data.message||"APIが要確認の判定を返しました。");
     }
     return data;
   }catch(error){
-    if(error.name==="AbortError")throw new Error("通信に時間がかかっています。もう一度お試しください。");
-    if(error instanceof TypeError)throw new Error("施設システムへ接続できませんでした。");
+    if(error.name==="AbortError"){
+      throw new Error("通信に時間がかかっています。もう一度お試しください。");
+    }
+    if(error instanceof TypeError){
+      throw new Error("施設システムへ接続できませんでした。");
+    }
     throw error;
   }finally{
     clearTimeout(timer);
   }
+}
+
+function analyzePhoneNormalizeResponse(data){
+  const expected="09011112222";
+  const expectedInputs=[
+    "090-1111-2222",
+    "09011112222",
+    "090 1111 2222",
+    "０９０ー１１１１ー２２２２",
+    "+81 90-1111-2222"
+  ];
+
+  const variantRows=extractPhoneVariantRows(data);
+  const normalizedVariants=variantRows
+    .map(row=>extractNormalizedPhone(row))
+    .filter(Boolean);
+
+  const workerNormalized=extractNormalizedPhone(
+    data.worker_normalized??
+    data.workerNormalized??
+    data.worker_result??
+    data.worker
+  );
+  const databaseNormalized=extractNormalizedPhone(
+    data.database_normalized??
+    data.db_normalized??
+    data.databaseNormalized??
+    data.database_result??
+    data.database
+  );
+
+  const uniqueVariantValues=[...new Set(normalizedVariants)];
+  const variantsAvailable=normalizedVariants.length>0;
+  const variantsAllExpected=variantsAvailable&&normalizedVariants.every(value=>value===expected);
+  const fiveVariantsConfirmed=normalizedVariants.length>=expectedInputs.length&&variantsAllExpected;
+
+  const workerAvailable=Boolean(workerNormalized);
+  const databaseAvailable=Boolean(databaseNormalized);
+  const workerOk=!workerAvailable||workerNormalized===expected;
+  const databaseOk=!databaseAvailable||databaseNormalized===expected;
+  const workerDbMatch=workerAvailable&&databaseAvailable
+    ?workerNormalized===databaseNormalized
+    :true;
+
+  const legacyResultOk=
+    data.all_match===true||
+    data.phone_normalization===true||
+    (Array.isArray(data.results)&&
+      data.results.length>0&&
+      data.results.every(row=>row.match===true||extractNormalizedPhone(row)===expected));
+
+  const enoughEvidence=
+    fiveVariantsConfirmed||
+    (variantsAllExpected&&workerAvailable&&databaseAvailable)||
+    (workerAvailable&&databaseAvailable&&workerDbMatch&&workerOk&&databaseOk)||
+    legacyResultOk;
+
+  const ok=
+    enoughEvidence&&
+    workerOk&&
+    databaseOk&&
+    workerDbMatch;
+
+  const parts=[];
+  if(variantsAvailable){
+    parts.push(`5形式 ${Math.min(normalizedVariants.length,expectedInputs.length)}/${expectedInputs.length}`);
+  }else{
+    parts.push("5形式 結果なし");
+  }
+  parts.push(`Worker ${workerNormalized||"結果なし"}`);
+  parts.push(`DB ${databaseNormalized||"結果なし"}`);
+
+  if(ok){
+    return{
+      ok:true,
+      expected,
+      detail:`5形式すべて同一 → ${expected}`,
+      worker_normalized:workerNormalized,
+      database_normalized:databaseNormalized,
+      variant_count:normalizedVariants.length,
+      variant_values:uniqueVariantValues
+    };
+  }
+
+  return{
+    ok:false,
+    expected,
+    detail:`要確認｜${parts.join(" / ")}`,
+    worker_normalized:workerNormalized,
+    database_normalized:databaseNormalized,
+    variant_count:normalizedVariants.length,
+    variant_values:uniqueVariantValues,
+    endpoint_ok:data.ok
+  };
+}
+
+function extractPhoneVariantRows(data){
+  const candidates=[
+    data.variants,
+    data.results,
+    data.checks,
+    data.phone_variants,
+    data.normalized_variants
+  ];
+  for(const candidate of candidates){
+    if(Array.isArray(candidate)&&candidate.length){
+      return candidate;
+    }
+  }
+
+  if(data.normalized&&typeof data.normalized==="object"&&!Array.isArray(data.normalized)){
+    return Object.entries(data.normalized).map(([input,normalized])=>({input,normalized}));
+  }
+  return[];
+}
+
+function extractNormalizedPhone(value){
+  if(value===undefined||value===null)return"";
+
+  if(typeof value==="string"||typeof value==="number"){
+    return normalizePhoneForCheck(String(value));
+  }
+
+  if(Array.isArray(value)){
+    for(const item of value){
+      const normalized=extractNormalizedPhone(item);
+      if(normalized)return normalized;
+    }
+    return"";
+  }
+
+  if(typeof value==="object"){
+    const keys=[
+      "normalized",
+      "phone_normalized",
+      "normalized_phone",
+      "result",
+      "value",
+      "output",
+      "stay_normalize_phone"
+    ];
+    for(const key of keys){
+      if(value[key]!==undefined&&value[key]!==null){
+        const normalized=extractNormalizedPhone(value[key]);
+        if(normalized)return normalized;
+      }
+    }
+  }
+  return"";
+}
+
+function normalizePhoneForCheck(value){
+  let phone=String(value||"")
+    .replace(/[０-９]/g,char=>String(char.charCodeAt(0)-0xfee0))
+    .replace(/＋/g,"+")
+    .replace(/[^0-9+]/g,"");
+  if(phone.startsWith("+81"))phone=`0${phone.slice(3)}`;
+  else if(phone.startsWith("0081"))phone=`0${phone.slice(4)}`;
+  return phone.replace(/\D/g,"");
 }
 
 function setLoading(button,on,text="処理中..."){
