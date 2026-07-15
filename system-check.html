@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#123f38">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="DPRO 宿泊・民泊 LINE 営業前システムチェック">
+  <title>DPROステイ｜営業前システムチェック STEP STAY-9</title>
+  <style>
+    :root{
+      --ink:#17231f;--muted:#66756f;--brand:#174f46;--brand-strong:#0c3d35;
+      --brand-soft:#eaf4f1;--surface:#fff;--surface-alt:#f3f7f5;--line:#d9e5e1;
+      --success:#1f7452;--success-soft:#e9f7ef;--warning:#8a5a13;--warning-soft:#fff6df;
+      --danger:#b23a3a;--danger-soft:#fff0f0;--info:#24688f;--info-soft:#edf7ff;
+      --shadow:0 12px 34px rgba(23,79,70,.10);--shadow-sm:0 6px 18px rgba(23,79,70,.07);
+      --radius-xl:24px;--radius-lg:18px;--radius-md:13px;--content:1240px;
+    }
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;min-height:100vh;color:var(--ink);
+      background:
+        radial-gradient(circle at 0 0,rgba(199,125,37,.10),transparent 28rem),
+        linear-gradient(180deg,#f8fbfa 0%,#edf4f2 100%);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",
+        "Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
+      line-height:1.55;-webkit-font-smoothing:antialiased
+    }
+    button,input,select,textarea{font:inherit}
+    button{cursor:pointer}
+    button,a{-webkit-tap-highlight-color:transparent}
+    [hidden]{display:none!important}
+    .shell{width:min(calc(100% - 20px),var(--content));margin:0 auto}
+    .topbar{
+      position:sticky;top:0;z-index:90;border-bottom:1px solid rgba(217,229,225,.94);
+      background:rgba(250,252,251,.94);backdrop-filter:blur(16px)
+    }
+    .topbar-inner{min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .brand{display:flex;align-items:center;gap:10px;min-width:0}
+    .brand-mark{
+      width:39px;height:39px;display:grid;place-items:center;border-radius:12px;color:#fff;
+      background:linear-gradient(145deg,var(--brand),var(--brand-strong));font-weight:950;
+      box-shadow:0 7px 17px rgba(23,79,70,.2)
+    }
+    .brand-name{display:block;font-size:15px;font-weight:950}
+    .brand-sub{display:block;margin-top:1px;color:var(--muted);font-size:10px;font-weight:800}
+    .top-actions{display:flex;align-items:center;gap:7px}
+    .top-button{
+      min-height:39px;display:inline-flex;align-items:center;justify-content:center;gap:7px;
+      padding:8px 11px;border:1px solid var(--line);border-radius:10px;
+      color:var(--brand-strong);background:#fff;font-size:10px;font-weight:900;text-decoration:none
+    }
+    .top-button:hover{background:var(--brand-soft)}
+    .hero{
+      margin-top:18px;padding:23px;border-radius:var(--radius-xl);color:#fff;
+      background:linear-gradient(125deg,var(--brand-strong),#267360);box-shadow:var(--shadow);
+      position:relative;overflow:hidden
+    }
+    .hero:after{
+      content:"";position:absolute;width:210px;height:210px;border-radius:50%;
+      right:-65px;bottom:-125px;background:rgba(199,125,37,.32)
+    }
+    .hero-top{position:relative;z-index:1;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+    .hero h1{margin:3px 0 0;font-size:clamp(28px,4.4vw,42px);line-height:1.2;letter-spacing:-.04em}
+    .hero p{margin:8px 0 0;color:rgba(255,255,255,.80);font-size:12px;font-weight:700}
+    .hero-date{
+      flex:0 0 auto;min-width:220px;padding:12px 14px;border-radius:14px;
+      background:rgba(255,255,255,.12)
+    }
+    .hero-date .label{color:rgba(255,255,255,.68);font-size:9px;font-weight:950;letter-spacing:.08em;text-transform:uppercase}
+    .hero-date .value{margin-top:3px;font-size:15px;font-weight:950}
+    .status-row{
+      position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+      gap:9px;margin-top:18px
+    }
+    .status-summary{padding:13px;border-radius:14px;background:rgba(255,255,255,.12)}
+    .status-summary .number{font-size:25px;line-height:1;font-weight:950}
+    .status-summary .label{margin-top:5px;color:rgba(255,255,255,.72);font-size:9px;font-weight:900}
+    .control-card{
+      margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:var(--radius-lg);
+      background:#fff;box-shadow:var(--shadow-sm)
+    }
+    .control-grid{display:grid;grid-template-columns:minmax(220px,1fr) auto auto auto;gap:9px;align-items:end}
+    .field label{display:block;margin-bottom:6px;color:var(--muted);font-size:9px;font-weight:900}
+    input,select,textarea{
+      width:100%;min-height:45px;padding:10px 12px;border:1px solid #ccd9d5;
+      border-radius:10px;color:var(--ink);background:#fff;outline:none
+    }
+    input:focus,select:focus,textarea:focus{border-color:#729f94;box-shadow:0 0 0 4px rgba(23,79,70,.10)}
+    .code-row{display:grid;grid-template-columns:1fr auto;gap:7px}
+    .clear-button{
+      min-width:55px;border:1px solid #edcaca;border-radius:10px;color:var(--danger);
+      background:var(--danger-soft);font-weight:900
+    }
+    .primary,.secondary,.outline,.danger{
+      min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;
+      padding:9px 14px;border-radius:10px;font-weight:900;text-decoration:none
+    }
+    .primary{border:0;color:#fff;background:linear-gradient(145deg,var(--brand),var(--brand-strong))}
+    .secondary{border:0;color:var(--brand-strong);background:var(--brand-soft)}
+    .outline{border:1px solid var(--line);color:var(--brand-strong);background:#fff}
+    .danger{border:1px solid #eccaca;color:var(--danger);background:var(--danger-soft)}
+    .small{min-height:36px;padding:7px 10px;font-size:10px}
+    button:disabled{cursor:wait;opacity:.68}
+    .message{margin-top:11px}
+    .message-box{padding:11px 13px;border:1px solid;border-radius:10px;font-size:11px;font-weight:800}
+    .message-box.error{color:var(--danger);border-color:#edcaca;background:var(--danger-soft)}
+    .message-box.success{color:var(--success);border-color:#bfe0d2;background:var(--success-soft)}
+    .message-box.info{color:var(--info);border-color:#cce1ef;background:var(--info-soft)}
+    .grid{
+      display:grid;grid-template-columns:minmax(0,1.12fr) minmax(340px,.88fr);
+      gap:12px;margin-top:12px;align-items:start
+    }
+    .stack{display:grid;gap:12px}
+    .panel{
+      padding:16px;border:1px solid var(--line);border-radius:var(--radius-lg);
+      background:#fff;box-shadow:var(--shadow-sm)
+    }
+    .panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:11px;margin-bottom:12px}
+    .panel h2{margin:0;font-size:19px;line-height:1.3}
+    .panel p{margin:4px 0 0;color:var(--muted);font-size:10px}
+    .count{
+      min-width:31px;height:31px;display:grid;place-items:center;border-radius:10px;
+      color:var(--brand);background:var(--brand-soft);font-size:11px;font-weight:950
+    }
+    .check-list{display:grid;gap:8px}
+    .check-item{
+      display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:10px;align-items:center;
+      padding:11px;border:1px solid var(--line);border-radius:12px;background:#fff
+    }
+    .check-icon{
+      width:38px;height:38px;display:grid;place-items:center;border-radius:12px;
+      color:var(--muted);background:var(--surface-alt);font-size:17px;font-weight:950
+    }
+    .check-item.ok .check-icon{color:var(--success);background:var(--success-soft)}
+    .check-item.ng .check-icon{color:var(--danger);background:var(--danger-soft)}
+    .check-item.running .check-icon{color:var(--info);background:var(--info-soft)}
+    .check-main strong{display:block;font-size:12px}
+    .check-main span{display:block;margin-top:2px;color:var(--muted);font-size:9px;overflow-wrap:anywhere}
+    .badge{
+      display:inline-flex;align-items:center;justify-content:center;min-height:27px;padding:4px 8px;
+      border-radius:999px;font-size:9px;font-weight:950;white-space:nowrap
+    }
+    .badge.ok{color:var(--success);background:var(--success-soft)}
+    .badge.ng{color:var(--danger);background:var(--danger-soft)}
+    .badge.wait{color:var(--muted);background:var(--surface-alt)}
+    .badge.running{color:var(--info);background:var(--info-soft)}
+    .count-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+    .metric{
+      padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--surface-alt)
+    }
+    .metric .number{font-size:22px;line-height:1;font-weight:950;color:var(--brand-strong)}
+    .metric .label{margin-top:5px;color:var(--muted);font-size:9px;font-weight:850}
+    .link-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+    .screen-link{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:12px;border:1px solid var(--line);border-radius:12px;color:var(--ink);
+      background:#fff;text-decoration:none
+    }
+    .screen-link:hover{border-color:#bad2ca;background:var(--brand-soft)}
+    .screen-link strong{display:block;font-size:11px}
+    .screen-link span{display:block;margin-top:2px;color:var(--muted);font-size:8px}
+    .screen-link .arrow{flex:0 0 auto;color:var(--brand);font-size:18px;font-weight:950}
+    .manual-list{display:grid;gap:7px}
+    .manual-row{
+      display:flex;align-items:flex-start;gap:9px;padding:10px;border:1px solid var(--line);
+      border-radius:11px;background:#fff
+    }
+    .manual-row input{width:19px;min-height:19px;flex:0 0 auto;margin-top:1px}
+    .manual-row strong{display:block;font-size:11px}
+    .manual-row span{display:block;margin-top:2px;color:var(--muted);font-size:9px}
+    .result-box{
+      padding:14px;border:1px solid #cbd9d5;border-radius:13px;background:var(--surface-alt);
+      text-align:center
+    }
+    .result-box .result-icon{font-size:31px}
+    .result-box h3{margin:7px 0 0;font-size:18px}
+    .result-box p{margin:5px 0 0}
+    .result-box.ok{border-color:#bfe0d2;background:var(--success-soft)}
+    .result-box.ng{border-color:#edcaca;background:var(--danger-soft)}
+    .raw{
+      max-height:250px;overflow:auto;padding:11px;border:1px solid var(--line);
+      border-radius:11px;color:#42524d;background:#f8faf9;font-family:Consolas,monospace;
+      font-size:9px;white-space:pre-wrap;overflow-wrap:anywhere
+    }
+    .footer{padding:24px 0 38px;color:#81908b;text-align:center;font-size:9px}
+    .spinner{
+      width:15px;height:15px;border:2px solid rgba(255,255,255,.40);
+      border-top-color:#fff;border-radius:50%;animation:spin .72s linear infinite
+    }
+    .outline .spinner,.secondary .spinner{border-color:rgba(23,79,70,.24);border-top-color:var(--brand)}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .toast-region{
+      position:fixed;right:16px;bottom:max(16px,env(safe-area-inset-bottom));z-index:300;
+      width:min(370px,calc(100% - 32px));display:grid;gap:8px;pointer-events:none
+    }
+    .toast{
+      padding:13px 15px;border-radius:12px;color:#fff;background:var(--brand-strong);
+      box-shadow:0 14px 35px rgba(0,0,0,.20);font-size:11px;font-weight:900
+    }
+    .toast.error{background:#8c2d2d}
+    @media(max-width:900px){
+      .grid{grid-template-columns:1fr}
+      .control-grid{grid-template-columns:1fr 1fr}
+      .control-grid .field{grid-column:1/-1}
+    }
+    @media(max-width:640px){
+      .shell{width:min(calc(100% - 14px),var(--content))}
+      .brand-sub,.top-actions .label{display:none}
+      .hero{padding:18px;border-radius:19px}
+      .hero-top{display:block}
+      .hero-date{margin-top:13px;min-width:0}
+      .status-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .control-grid{grid-template-columns:1fr}
+      .control-grid .field{grid-column:auto}
+      .count-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+      .link-grid{grid-template-columns:1fr}
+      .check-item{grid-template-columns:38px minmax(0,1fr)}
+      .check-item>.badge{grid-column:2;justify-self:start}
+    }
+  </style>
+</head>
+<body>
+<header class="topbar">
+  <div class="shell topbar-inner">
+    <div class="brand">
+      <span class="brand-mark">D</span>
+      <span><span class="brand-name" id="facilityNameHeader">DPROステイ</span><span class="brand-sub">営業前システムチェック</span></span>
+    </div>
+    <div class="top-actions">
+      <a class="top-button" href="owner.html?demo=1"><span>PC管理</span></a>
+      <a class="top-button" href="owner-ipad.html?demo=1"><span>iPad</span></a>
+      <button class="top-button" id="reloadButton" type="button">↻ <span class="label">再チェック</span></button>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="hero">
+    <div class="hero-top">
+      <div>
+        <p style="margin:0;color:rgba(255,255,255,.72);font-size:10px;font-weight:950;letter-spacing:.10em">SYSTEM CHECK</p>
+        <h1>営業前の確認を、<br>この画面で完了。</h1>
+        <p>API・DB・デモデータ・予約照合・全画面を一括確認します。</p>
+      </div>
+      <div class="hero-date">
+        <div class="label">Check date</div>
+        <div class="value" id="todayLabel">—</div>
+      </div>
+    </div>
+    <div class="status-row">
+      <div class="status-summary"><div class="number" id="okCount">0</div><div class="label">正常</div></div>
+      <div class="status-summary"><div class="number" id="ngCount">0</div><div class="label">要確認</div></div>
+      <div class="status-summary"><div class="number" id="manualCount">0</div><div class="label">手動確認済み</div></div>
+      <div class="status-summary"><div class="number" id="overallText">未実行</div><div class="label">総合判定</div></div>
+    </div>
+  </section>
+
+  <section class="control-card">
+    <div class="control-grid">
+      <div class="field">
+        <label for="adminCode">管理コード</label>
+        <div class="code-row">
+          <input id="adminCode" type="password" inputmode="numeric" autocomplete="off" maxlength="200" placeholder="管理コードを入力">
+          <button class="clear-button" id="clearCodeButton" type="button">消去</button>
+        </div>
+      </div>
+      <button class="primary" id="runCheckButton" type="button">一括チェック</button>
+      <button class="secondary" id="prepareDemoButton" type="button">営業デモを準備</button>
+      <button class="outline" id="copyResultButton" type="button">結果をコピー</button>
+    </div>
+    <div class="message" id="controlMessage" aria-live="polite"></div>
+  </section>
+
+  <div class="grid">
+    <div class="stack">
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>自動チェック</h2><p>Worker・Supabase・デモ予約を実際に確認します。</p></div>
+          <span class="count" id="autoCheckCount">0</span>
+        </div>
+        <div class="check-list" id="autoCheckList"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>本日のデモ件数</h2><p>営業時に画面へ表示されるデータです。</p></div>
+        </div>
+        <div class="count-grid" id="metricGrid"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>全画面を開く</h2><p>デモ準備後、各画面を順番に確認します。</p></div>
+        </div>
+        <div class="link-grid" id="screenLinks"></div>
+      </section>
+    </div>
+
+    <aside class="stack">
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>総合判定</h2><p>自動チェックと手動確認をまとめます。</p></div>
+        </div>
+        <div class="result-box" id="resultBox">
+          <div class="result-icon" id="resultIcon">○</div>
+          <h3 id="resultTitle">一括チェックを実行してください</h3>
+          <p id="resultDescription">管理コードを入力して確認します。</p>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>手動チェック</h2><p>実画面でしか確認できない項目です。</p></div>
+          <span class="count" id="manualTotal">0</span>
+        </div>
+        <div class="manual-list" id="manualList"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div><h2>確認結果の詳細</h2><p>エラー調査時に使用します。</p></div>
+        </div>
+        <pre class="raw" id="rawOutput">まだ実行されていません。</pre>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<footer class="footer">
+  <div class="shell">DPRO 宿泊・民泊 LINE｜STEP STAY-9｜system-check.html</div>
+</footer>
+
+<div class="toast-region" id="toastRegion" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+const CONFIG=Object.freeze({
+  API_BASE:"https://dpro-stay-line-api.dpromstk2000.workers.dev",
+  FACILITY_CODE:"dpro_stay_demo",
+  VERSION:"STAY-9",
+  DEMO_RESERVATION_NUMBER:"STAY-DEMO-002",
+  DEMO_PHONE:"090-9999-2222"
+});
+
+const state={
+  adminCode:"",
+  demoMode:new URLSearchParams(location.search).get("demo")==="1",
+  checks:[],
+  metrics:{},
+  raw:{},
+  running:false
+};
+
+const $=id=>document.getElementById(id);
+const els={
+  facilityNameHeader:$("facilityNameHeader"),todayLabel:$("todayLabel"),
+  okCount:$("okCount"),ngCount:$("ngCount"),manualCount:$("manualCount"),
+  overallText:$("overallText"),adminCode:$("adminCode"),clearCodeButton:$("clearCodeButton"),
+  runCheckButton:$("runCheckButton"),prepareDemoButton:$("prepareDemoButton"),
+  copyResultButton:$("copyResultButton"),reloadButton:$("reloadButton"),
+  controlMessage:$("controlMessage"),autoCheckCount:$("autoCheckCount"),
+  autoCheckList:$("autoCheckList"),metricGrid:$("metricGrid"),
+  screenLinks:$("screenLinks"),resultBox:$("resultBox"),resultIcon:$("resultIcon"),
+  resultTitle:$("resultTitle"),resultDescription:$("resultDescription"),
+  manualTotal:$("manualTotal"),manualList:$("manualList"),
+  rawOutput:$("rawOutput"),toastRegion:$("toastRegion")
+};
+
+const CHECK_DEFINITIONS=[
+  ["health","API・DB接続","Worker healthと施設情報を確認"],
+  ["admin","管理コード","管理コード検証APIを確認"],
+  ["facility","施設設定","施設名・最大30室設定を確認"],
+  ["units","部屋・棟","有効な部屋・棟が1〜30件であることを確認"],
+  ["staff","スタッフ","有効なスタッフが登録されていることを確認"],
+  ["dashboard","今日の運営","本日のチェックイン・清掃・連絡件数を確認"],
+  ["phone","電話番号正規化","ハイフン・全角・+81形式の同一判定を確認"],
+  ["lookup","公開予約照合","予約番号＋電話番号で予約を確認"],
+  ["member","宿泊者マイページAPI","予約確認後の宿泊案内取得を確認"]
+];
+
+const MANUAL_ITEMS=[
+  ["index","宿泊者入口","予約確認・到着時間・問い合わせフォームが表示される"],
+  ["member","宿泊者マイページ","予約情報・アクセス・Wi-Fi・ハウスルールが表示される"],
+  ["owner","オーナーPC","今日の運営・予約・清掃・問い合わせが表示される"],
+  ["ipad","オーナーiPad","部屋別の清掃・到着状況が大きく表示される"],
+  ["staff","スタッフ画面","今日＋未完了作業、問い合わせ、忘れ物が表示される"],
+  ["mobile","スマホ表示","index.htmlとmember.htmlがスマホ幅で崩れない"],
+  ["action","更新操作","清掃状態または問い合わせ状態を1件更新できる"],
+  ["copy","文面コピー","宿泊者画面または予約詳細から文面をコピーできる"]
+];
+
+document.addEventListener("DOMContentLoaded",initialize);
+
+function initialize(){
+  bindEvents();
+  els.todayLabel.textContent=formatDate(today());
+  renderChecks();
+  renderMetrics();
+  renderLinks();
+  renderManual();
+  if(state.demoMode){
+    els.adminCode.value="1234";
+    setTimeout(()=>prepareDemo(),150);
+  }else{
+    checkPublicHealth();
+  }
+}
+
+function bindEvents(){
+  els.clearCodeButton.addEventListener("click",()=>{els.adminCode.value="";els.adminCode.focus();});
+  els.runCheckButton.addEventListener("click",runAllChecks);
+  els.prepareDemoButton.addEventListener("click",prepareDemo);
+  els.copyResultButton.addEventListener("click",copyResult);
+  els.reloadButton.addEventListener("click",runAllChecks);
+}
+
+async function checkPublicHealth(){
+  try{
+    const data=await publicApi("/api/health");
+    state.raw.health=data;
+    const name=data.database?.facility_name||"DPROステイ";
+    els.facilityNameHeader.textContent=name;
+  }catch{}
+}
+
+async function runAllChecks(){
+  if(state.running)return;
+  const code=els.adminCode.value.trim();
+  if(!code){
+    showMessage(els.controlMessage,"管理コードを入力してください。","error");
+    els.adminCode.focus();
+    return;
+  }
+
+  state.running=true;
+  state.adminCode=code;
+  state.checks=CHECK_DEFINITIONS.map(([id,title,description])=>({id,title,description,status:"running",detail:"確認中"}));
+  state.metrics={};
+  state.raw={};
+  renderChecks();
+  updateSummary();
+  setLoading(els.runCheckButton,true,"確認中...");
+  clearMessage(els.controlMessage);
+
+  await runCheck("health",async()=>{
+    const data=await publicApi("/api/health");
+    state.raw.health=data;
+    const ok=data.ok===true&&data.database?.ok===true;
+    const detail=`${data.service||"API"} / ${data.version||"version不明"}`;
+    if(data.database?.facility_name)els.facilityNameHeader.textContent=data.database.facility_name;
+    return{ok,detail};
+  });
+
+  await runCheck("admin",async()=>{
+    const data=await adminApi("/api/admin/verify",{method:"POST",body:{admin_code:code}});
+    state.raw.admin_verify=data;
+    return{ok:data.ok!==false,detail:"管理コードを確認できました"};
+  });
+
+  await Promise.all([
+    runCheck("facility",async()=>{
+      const data=await adminApi("/api/admin/facility");
+      state.raw.facility=data;
+      const f=data.facility||{};
+      const ok=Boolean(f.facility_name)&&Number(f.max_units)===30;
+      return{ok,detail:`${f.facility_name||"施設名なし"} / 最大${f.max_units||"?"}室・棟`};
+    }),
+    runCheck("units",async()=>{
+      const data=await adminApi("/api/admin/units");
+      state.raw.units=data;
+      const rows=data.units||[];
+      const active=rows.filter(x=>x.is_active!==false).length;
+      state.metrics.active_units=active;
+      return{ok:active>=1&&active<=30,detail:`有効 ${active}室・棟`};
+    }),
+    runCheck("staff",async()=>{
+      const data=await adminApi("/api/admin/staff?include_inactive=0");
+      state.raw.staff=data;
+      const count=(data.staff||[]).length;
+      state.metrics.staff_count=count;
+      return{ok:count>=1,detail:`有効スタッフ ${count}名`};
+    }),
+    runCheck("phone",async()=>{
+      const data=await adminApi("/api/admin/phone-normalize-check");
+      state.raw.phone_normalize=data;
+      const ok=data.ok!==false&&(data.all_match===true||data.phone_normalization===true||data.results?.every?.(x=>x.match===true));
+      return{ok,detail:ok?"電話番号正規化は正常":"正規化結果を確認してください"};
+    }),
+    runCheck("lookup",async()=>{
+      const data=await publicApi("/api/public/reservation/lookup",{
+        method:"POST",
+        body:{
+          facility_code:CONFIG.FACILITY_CODE,
+          reservation_number:CONFIG.DEMO_RESERVATION_NUMBER,
+          phone:CONFIG.DEMO_PHONE
+        }
+      });
+      state.raw.public_lookup=data;
+      const ok=data.ok!==false&&Boolean(data.reservation||data.matched||data.found);
+      return{ok,detail:`${CONFIG.DEMO_RESERVATION_NUMBER}を照合`};
+    }),
+    runCheck("member",async()=>{
+      const data=await publicApi("/api/member/reservation",{
+        method:"POST",
+        body:{
+          facility_code:CONFIG.FACILITY_CODE,
+          reservation_number:CONFIG.DEMO_RESERVATION_NUMBER,
+          phone:CONFIG.DEMO_PHONE
+        }
+      });
+      state.raw.member=data;
+      const ok=data.ok!==false&&Boolean(data.member?.reservation||data.reservation);
+      return{ok,detail:"宿泊者マイページ情報を取得"};
+    })
+  ]);
+
+  await runCheck("dashboard",async()=>{
+    const data=await adminApi(`/api/admin/dashboard?date=${encodeURIComponent(today())}`);
+    state.raw.dashboard=data;
+    const s=data.summary||{};
+    state.metrics={
+      ...state.metrics,
+      checkins:Number(s.checkins||0),
+      checkouts:Number(s.checkouts||0),
+      staying:Number(s.staying||0),
+      arrival_pending:Number(s.arrival_pending||0),
+      cleaning:Number(s.cleaning_waiting||0)+Number(s.cleaning_in_progress||0),
+      inquiries:Number(s.active_inquiries||0),
+      lost:Number(s.active_lost_items||0)
+    };
+    const ok=data.ok!==false&&Boolean(data.facility||data.summary);
+    return{ok,detail:`IN ${s.checkins||0} / OUT ${s.checkouts||0} / 滞在 ${s.staying||0}`};
+  });
+
+  renderMetrics();
+  renderRaw();
+  updateSummary();
+  showMessage(
+    els.controlMessage,
+    state.checks.every(x=>x.status==="ok")
+      ?"自動チェックはすべて正常です。各画面の手動確認を行ってください。"
+      :"要確認の項目があります。詳細を確認してください。",
+    state.checks.every(x=>x.status==="ok")?"success":"error"
+  );
+  state.running=false;
+  setLoading(els.runCheckButton,false);
+}
+
+async function runCheck(id,runner){
+  updateCheck(id,"running","確認中");
+  try{
+    const result=await runner();
+    updateCheck(id,result.ok?"ok":"ng",result.detail||"");
+  }catch(error){
+    state.raw[`${id}_error`]={message:error.message};
+    updateCheck(id,"ng",error.message);
+  }
+  renderChecks();
+  updateSummary();
+}
+
+async function prepareDemo(){
+  const code=els.adminCode.value.trim();
+  if(!code){
+    showMessage(els.controlMessage,"管理コードを入力してください。","error");
+    return;
+  }
+  state.adminCode=code;
+  setLoading(els.prepareDemoButton,true,"準備中...");
+  showMessage(els.controlMessage,"今日基準の営業デモデータを準備しています。","info");
+  try{
+    const data=await adminApi("/api/admin/demo-prepare",{
+      method:"POST",
+      body:{base_date:today()}
+    });
+    state.raw.demo_prepare=data;
+    showToast("営業デモデータを準備しました。");
+    await runAllChecks();
+  }catch(error){
+    showMessage(els.controlMessage,error.message,"error");
+    showToast(error.message,"error");
+  }finally{
+    setLoading(els.prepareDemoButton,false);
+  }
+}
+
+function updateCheck(id,status,detail){
+  const item=state.checks.find(x=>x.id===id);
+  if(!item)return;
+  item.status=status;
+  item.detail=detail;
+}
+
+function renderChecks(){
+  const rows=state.checks.length
+    ?state.checks
+    :CHECK_DEFINITIONS.map(([id,title,description])=>({id,title,description,status:"wait",detail:"未実行"}));
+
+  els.autoCheckCount.textContent=rows.length;
+  els.autoCheckList.innerHTML=rows.map(item=>{
+    const icon=item.status==="ok"?"✓":item.status==="ng"?"!":item.status==="running"?"↻":"○";
+    const label=item.status==="ok"?"正常":item.status==="ng"?"要確認":item.status==="running"?"確認中":"未実行";
+    return`<div class="check-item ${item.status}">
+      <div class="check-icon">${icon}</div>
+      <div class="check-main"><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.detail||item.description)}</span></div>
+      <span class="badge ${item.status}">${label}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderMetrics(){
+  const items=[
+    [state.metrics.active_units??0,"有効な部屋・棟"],
+    [state.metrics.staff_count??0,"スタッフ"],
+    [state.metrics.checkins??0,"今日チェックイン"],
+    [state.metrics.checkouts??0,"今日チェックアウト"],
+    [state.metrics.staying??0,"滞在中"],
+    [state.metrics.arrival_pending??0,"到着未確認"],
+    [state.metrics.cleaning??0,"清掃対応"],
+    [state.metrics.inquiries??0,"問い合わせ"],
+    [state.metrics.lost??0,"忘れ物"]
+  ];
+  els.metricGrid.innerHTML=items.map(([number,label])=>`<div class="metric"><div class="number">${number}</div><div class="label">${escapeHtml(label)}</div></div>`).join("");
+}
+
+function renderLinks(){
+  const base="https://dpromstk2000-lab.github.io/dpro-stay-line";
+  const links=[
+    ["宿泊者入口","index.html?demo=1&v=stay-9","予約確認・到着時間・問い合わせ"],
+    ["宿泊者マイページ","member.html?demo=1&v=stay-9","予約・アクセス・Wi-Fi・ルール"],
+    ["オーナーPC","owner.html?demo=1&v=stay-9","予約・清掃・問い合わせ・設定"],
+    ["オーナーiPad","owner-ipad.html?demo=1&v=stay-9","部屋別の当日運営"],
+    ["スタッフ業務","staff.html?demo=1&v=stay-9","今日＋未完了の担当業務"],
+    ["Worker health","https://dpro-stay-line-api.dpromstk2000.workers.dev/api/health","API・DB接続確認"]
+  ];
+  els.screenLinks.innerHTML=links.map(([title,path,description])=>{
+    const url=path.startsWith("http")?path:`${base}/${path}`;
+    return`<a class="screen-link" href="${escapeAttribute(url)}" target="_blank" rel="noopener">
+      <span><strong>${escapeHtml(title)}</strong><span>${escapeHtml(description)}</span></span>
+      <span class="arrow">›</span>
+    </a>`;
+  }).join("");
+}
+
+function renderManual(){
+  els.manualTotal.textContent=MANUAL_ITEMS.length;
+  els.manualList.innerHTML=MANUAL_ITEMS.map(([id,title,description])=>`<label class="manual-row">
+    <input type="checkbox" data-manual="${escapeAttribute(id)}">
+    <span><strong>${escapeHtml(title)}</strong><span>${escapeHtml(description)}</span></span>
+  </label>`).join("");
+  els.manualList.querySelectorAll("[data-manual]").forEach(box=>box.addEventListener("change",updateSummary));
+}
+
+function updateSummary(){
+  const ok=state.checks.filter(x=>x.status==="ok").length;
+  const ng=state.checks.filter(x=>x.status==="ng").length;
+  const manual=[...els.manualList.querySelectorAll("[data-manual]")];
+  const manualDone=manual.filter(x=>x.checked).length;
+
+  els.okCount.textContent=ok;
+  els.ngCount.textContent=ng;
+  els.manualCount.textContent=manualDone;
+
+  const autoComplete=state.checks.length===CHECK_DEFINITIONS.length&&state.checks.every(x=>["ok","ng"].includes(x.status));
+  const allAutoOk=autoComplete&&ng===0;
+  const allManualOk=manualDone===MANUAL_ITEMS.length;
+
+  els.resultBox.className="result-box";
+  if(allAutoOk&&allManualOk){
+    els.overallText.textContent="OK";
+    els.resultBox.classList.add("ok");
+    els.resultIcon.textContent="✓";
+    els.resultTitle.textContent="営業前チェック完了";
+    els.resultDescription.textContent="自動チェックと手動チェックがすべて完了しています。";
+  }else if(ng>0){
+    els.overallText.textContent="要確認";
+    els.resultBox.classList.add("ng");
+    els.resultIcon.textContent="!";
+    els.resultTitle.textContent="確認が必要な項目があります";
+    els.resultDescription.textContent="自動チェックの赤い項目と詳細を確認してください。";
+  }else if(allAutoOk){
+    els.overallText.textContent="手動確認";
+    els.resultIcon.textContent="○";
+    els.resultTitle.textContent="自動チェックは正常です";
+    els.resultDescription.textContent=`手動チェック ${manualDone}/${MANUAL_ITEMS.length} を確認してください。`;
+  }else{
+    els.overallText.textContent=state.running?"確認中":"未実行";
+    els.resultIcon.textContent=state.running?"↻":"○";
+    els.resultTitle.textContent=state.running?"一括チェックを実行中":"一括チェックを実行してください";
+    els.resultDescription.textContent=state.running?"各APIを順番に確認しています。":"管理コードを入力して確認します。";
+  }
+}
+
+function renderRaw(){
+  els.rawOutput.textContent=JSON.stringify({
+    checked_at:new Date().toISOString(),
+    version:CONFIG.VERSION,
+    checks:state.checks,
+    metrics:state.metrics,
+    responses:state.raw
+  },null,2);
+}
+
+async function copyResult(){
+  const manual=[...els.manualList.querySelectorAll("[data-manual]")];
+  const lines=[
+    `DPRO 宿泊・民泊 LINE ${CONFIG.VERSION}`,
+    `確認日時：${formatDateTime(new Date().toISOString())}`,
+    "",
+    "【自動チェック】",
+    ...state.checks.map(x=>`${x.status==="ok"?"OK":"NG"}｜${x.title}｜${x.detail}`),
+    "",
+    `【手動チェック】 ${manual.filter(x=>x.checked).length}/${manual.length}`,
+    ...MANUAL_ITEMS.map(([id,title])=>`${manual.find(x=>x.dataset.manual===id)?.checked?"OK":"未"}｜${title}`),
+    "",
+    `総合判定：${els.overallText.textContent}`
+  ];
+  await copyText(lines.join("\n"));
+  showToast("確認結果をコピーしました。");
+}
+
+async function adminApi(path,options={}){
+  if(!state.adminCode)throw new Error("管理コードを入力してください。");
+  const headers={
+    "Accept":"application/json",
+    "X-Admin-Code":state.adminCode,
+    "X-Facility-Code":CONFIG.FACILITY_CODE
+  };
+  let body;
+  if(options.body!==undefined){
+    headers["Content-Type"]="application/json";
+    body=JSON.stringify(cleanObject({...options.body,facility_code:CONFIG.FACILITY_CODE}));
+  }
+  return fetchJson(`${CONFIG.API_BASE}${path}`,{
+    method:options.method||"GET",headers,body
+  });
+}
+
+async function publicApi(path,options={}){
+  const headers={"Accept":"application/json"};
+  let body;
+  if(options.body!==undefined){
+    headers["Content-Type"]="application/json";
+    body=JSON.stringify(cleanObject(options.body));
+  }
+  return fetchJson(`${CONFIG.API_BASE}${path}`,{
+    method:options.method||"GET",headers,body
+  });
+}
+
+async function fetchJson(url,options){
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),18000);
+  try{
+    const response=await fetch(url,{...options,signal:controller.signal,cache:"no-store"});
+    const text=await response.text();
+    let data={};
+    if(text){
+      try{data=JSON.parse(text);}
+      catch{throw new Error("サーバーから正しいJSON応答を受信できませんでした。");}
+    }
+    if(!response.ok||data.ok===false){
+      throw new Error(data.error||data.message||`通信エラー（${response.status}）`);
+    }
+    return data;
+  }catch(error){
+    if(error.name==="AbortError")throw new Error("通信に時間がかかっています。もう一度お試しください。");
+    if(error instanceof TypeError)throw new Error("施設システムへ接続できませんでした。");
+    throw error;
+  }finally{
+    clearTimeout(timer);
+  }
+}
+
+function setLoading(button,on,text="処理中..."){
+  if(!button.dataset.defaultText)button.dataset.defaultText=button.textContent;
+  button.disabled=on;
+  button.innerHTML=on?`<span class="spinner"></span>${escapeHtml(text)}`:escapeHtml(button.dataset.defaultText);
+}
+
+function showMessage(container,text,tone){
+  container.innerHTML=`<div class="message-box ${tone}">${escapeHtml(text)}</div>`;
+}
+function clearMessage(container){container.innerHTML="";}
+function showToast(text,tone="success"){
+  const toast=document.createElement("div");
+  toast.className=`toast ${tone}`;
+  toast.textContent=text;
+  els.toastRegion.appendChild(toast);
+  setTimeout(()=>toast.remove(),3500);
+}
+async function copyText(text){
+  try{await navigator.clipboard.writeText(text);}
+  catch{
+    const textarea=document.createElement("textarea");
+    textarea.value=text;
+    textarea.style.position="fixed";
+    textarea.style.opacity="0";
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand("copy");
+    textarea.remove();
+  }
+}
+function cleanObject(object){
+  return Object.fromEntries(Object.entries(object).filter(([,value])=>value!==""&&value!==undefined));
+}
+function today(){
+  return new Intl.DateTimeFormat("en-CA",{
+    timeZone:"Asia/Tokyo",year:"numeric",month:"2-digit",day:"2-digit"
+  }).format(new Date());
+}
+function formatDate(value){
+  if(!value)return"—";
+  const date=new Date(`${value}T00:00:00+09:00`);
+  return new Intl.DateTimeFormat("ja-JP",{
+    timeZone:"Asia/Tokyo",year:"numeric",month:"long",day:"numeric",weekday:"short"
+  }).format(date);
+}
+function formatDateTime(value){
+  return new Intl.DateTimeFormat("ja-JP",{
+    timeZone:"Asia/Tokyo",year:"numeric",month:"numeric",day:"numeric",
+    weekday:"short",hour:"2-digit",minute:"2-digit"
+  }).format(new Date(value));
+}
+function escapeHtml(value){
+  return String(value??"")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+function escapeAttribute(value){return escapeHtml(value);}
+</script>
+</body>
+</html>
