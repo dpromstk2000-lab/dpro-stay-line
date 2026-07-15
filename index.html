@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#174f46">
   <meta name="format-detection" content="telephone=no">
   <meta name="description" content="DPRO 宿泊・民泊 LINE 宿泊者サポート。予約確認、到着時間の連絡、宿泊前・滞在中のお問い合わせ、忘れ物連絡に対応します。">
-  <title>DPROステイ｜宿泊者サポート</title>
+  <title>DPROステイ｜宿泊者サポート STEP STAY-11</title>
   <style>
     :root {
       --ink: #172421;
@@ -628,6 +628,19 @@
       *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
     }
   </style>
+<style id="stay11-visual-upgrade">
+
+:root{--content:1120px;--shadow:0 18px 48px rgba(14,60,52,.13)}
+body{font-size:16px;line-height:1.72;background:radial-gradient(circle at 6% 0%,rgba(201,138,61,.13),transparent 30rem),linear-gradient(180deg,#f7faf9 0%,#edf4f1 52%,#f8faf9 100%)}
+.site-header{border-bottom-color:#cfddd8;background:rgba(250,252,251,.96)}
+.header-inner{min-height:72px}.brand-mark{width:42px;height:42px}.brand-name{font-size:17px}.brand-sub{font-size:12px}.header-help{min-height:42px;padding:9px 15px;font-size:13px}
+.hero{padding:34px 0 22px}.hero-card{padding:clamp(32px,5vw,58px);border-radius:27px;border:1px solid rgba(255,255,255,.12)}.hero h1{font-size:clamp(36px,6vw,58px);line-height:1.14}.hero-copy{max-width:760px;font-size:clamp(16px,2.2vw,20px);line-height:1.7}.eyebrow{font-size:13px}.hero-meta span{padding:9px 13px;font-size:13px}
+.status-banner{padding:14px 17px;font-size:14px}.action-nav{gap:14px;padding:16px 0 30px}.action-chip{min-height:110px;padding:18px 16px;border-color:#cedbd7;border-radius:17px}.action-chip strong{font-size:16px}.action-chip small{font-size:12px;line-height:1.6}
+.section-card{padding:clamp(24px,4vw,34px);border-color:#cedbd7;border-radius:20px;box-shadow:0 10px 28px rgba(23,79,70,.075)}.section-card+.section-card{margin-top:18px}.section-kicker{font-size:11px}.section-title{font-size:clamp(24px,3vw,30px);line-height:1.3}.section-desc{font-size:14px}.step-badge{min-width:39px;min-height:39px;font-size:12px}
+.form-grid{gap:17px 16px}.field label{font-size:13px}.hint{font-size:11px;line-height:1.6}input,select,textarea{min-height:52px;padding:12px 14px;border-radius:11px;font-size:15px}textarea{min-height:135px}.btn{min-height:49px;padding:11px 17px;font-size:14px;border-radius:11px}.button-note{font-size:11px}.privacy-note,.info{font-size:12px}.guide-box{padding:16px}.guide-body{font-size:13px}.contact-card{padding:20px}.contact-card strong{font-size:15px}
+@media(max-width:760px){.shell{width:min(calc(100% - 18px),var(--content))}.hero{padding-top:18px}.hero-card{padding:27px 22px;border-radius:21px}.hero h1{font-size:34px}.hero-copy{font-size:16px}.action-nav{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.action-chip{min-height:94px;padding:14px}.section-card{padding:22px 17px}.section-title{font-size:24px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.btn{width:100%}.button-row{align-items:stretch}.brand-sub{display:none}}
+
+</style>
 </head>
 <body>
   <a class="skip-link" href="#main">本文へ移動</a>
@@ -923,7 +936,7 @@
 
   <footer>
     <div id="footerFacilityName">DPROステイ</div>
-    <div class="version">DPRO 宿泊・民泊 LINE｜STEP STAY-4</div>
+    <div class="version">DPRO 宿泊・民泊 LINE｜STEP STAY-11</div>
   </footer>
 
   <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
@@ -934,7 +947,7 @@
     const DEFAULT_CONFIG = Object.freeze({
       API_BASE: "https://dpro-stay-line-api.dpromstk2000.workers.dev",
       FACILITY_CODE: "dpro_stay_demo",
-      VERSION: "STAY-4-GUEST-ENTRY-20260714",
+      VERSION: "STAY-11-GUEST-ENTRY-VISUAL-20260715",
       MEMBER_PAGE: "member.html"
     });
 
@@ -1515,7 +1528,10 @@
     }
 
     function normalizePhoneForTel(value) {
-      return String(value || "").replace(/[０-９]/g, (char) => String(char.charCodeAt(0) - 0xfee0)).replace(/[^0-9+]/g, "");
+      let phone = String(value || "").normalize("NFKC").trim().replace(/[^0-9+]/g, "");
+      if (phone.startsWith("+81")) phone = `0${phone.slice(3)}`;
+      else if (phone.startsWith("0081")) phone = `0${phone.slice(4)}`;
+      return phone.replace(/\D/g, "");
     }
 
     function compactObject(value) {

@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#174f46">
   <meta name="format-detection" content="telephone=no">
   <meta name="description" content="DPRO 宿泊・民泊 LINE 宿泊者マイページ。予約内容、到着時間、アクセス、駐車場、Wi-Fi、ハウスルールなどを確認できます。">
-  <title>DPROステイ｜宿泊者マイページ</title>
+  <title>DPROステイ｜宿泊者マイページ STEP STAY-11</title>
   <style>
     :root {
       --ink: #172421;
@@ -967,6 +967,19 @@
       }
     }
   </style>
+<style id="stay11-visual-upgrade">
+
+:root{--content:1180px;--shadow:0 18px 48px rgba(14,60,52,.13)}
+body{font-size:16px;line-height:1.7;background:radial-gradient(circle at 7% 0%,rgba(201,138,61,.12),transparent 30rem),linear-gradient(180deg,#f7faf9 0%,#edf4f1 50%,#f9fbfa 100%)}
+.site-header{background:rgba(250,252,251,.96);border-bottom-color:#cfddd8}.header-inner{min-height:72px}.brand-mark{width:42px;height:42px}.brand-name{font-size:17px}.brand-sub{font-size:12px}.header-link{min-height:42px;padding:9px 15px;font-size:13px}
+.page-top{padding-top:28px}.hero-card{padding:clamp(32px,5vw,58px);border-radius:27px}.hero-card h1{font-size:clamp(36px,5vw,55px);line-height:1.15}.hero-copy{font-size:clamp(16px,2vw,19px);line-height:1.7}.eyebrow,.hero-tags span{font-size:13px}
+.api-banner,.security-notice{padding:14px 16px;font-size:13px}.welcome-card{padding:clamp(25px,4vw,36px);border-radius:22px}.welcome-card h2{font-size:clamp(28px,4vw,40px);line-height:1.25}.welcome-copy{font-size:14px}.summary-chip{min-height:78px;padding:14px}.summary-chip .label{font-size:10px}.summary-chip .value{font-size:15px}.stage-pill{font-size:11px}
+.quick-actions{gap:12px}.quick-action{min-height:104px;padding:17px;border-color:#cedbd7;border-radius:16px}.quick-action strong{font-size:15px}.quick-action small{font-size:11px}.priority-panel{padding:24px;border-radius:19px}.priority-panel h2{font-size:26px}.priority-item{min-height:76px;padding:14px}.priority-item strong{font-size:13px}.priority-item span{font-size:10px}
+.content-grid{grid-template-columns:minmax(0,1.08fr) minmax(340px,.92fr);gap:18px}.stack{gap:18px}.reservation-card,.arrival-card,.guides-section,.contact-card,.copy-card{padding:24px;border-color:#cedbd7;border-radius:19px;box-shadow:0 9px 27px rgba(23,79,70,.07)}.panel-heading,.card-head h2,.guides-head h2{font-size:24px}.panel-description{font-size:12px}.detail-label{font-size:10px}.detail-value{font-size:14px}.detail-row{padding:11px 0}.arrival-current{padding:14px}.arrival-current strong{font-size:14px}.arrival-current span{font-size:11px}
+.guide-grid{gap:10px}.guide-card{border-color:#cedbd7}.guide-title{font-size:14px}.guide-content{font-size:12px;line-height:1.75}.contact-option{min-height:72px;padding:13px}.contact-option strong{font-size:13px}.contact-option span{font-size:10px}.copy-preview{font-size:12px;line-height:1.7}.button{min-height:49px;padding:11px 17px;font-size:14px;border-radius:11px}input,select,textarea{min-height:51px;padding:12px 13px;font-size:14px}.field label{font-size:12px}.field-hint{font-size:10px}
+@media(max-width:860px){.shell{width:min(calc(100% - 18px),var(--content))}.content-grid{grid-template-columns:1fr}.page-top{padding-top:18px}.hero-card{padding:28px 22px;border-radius:21px}.hero-card h1{font-size:34px}.welcome-card h2{font-size:29px}.quick-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.priority-list{grid-template-columns:1fr}.reservation-card,.arrival-card,.guides-section,.contact-card,.copy-card{padding:20px 17px}.button{width:100%}}
+
+</style>
 </head>
 <body>
   <a class="skip-link" href="#main">本文へ移動</a>
@@ -1346,7 +1359,7 @@
   <footer class="footer">
     <div class="shell">
       <strong id="footerFacilityName">DPROステイ</strong><br>
-      DPRO 宿泊・民泊 LINE｜STEP STAY-5
+      DPRO 宿泊・民泊 LINE｜STEP STAY-11
     </div>
   </footer>
 
@@ -1358,7 +1371,7 @@
     const CONFIG = Object.freeze({
       API_BASE: "https://dpro-stay-line-api.dpromstk2000.workers.dev",
       FACILITY_CODE: "dpro_stay_demo",
-      VERSION: "STAY-5",
+      VERSION: "STAY-11-MEMBER-VISUAL-20260715",
       DEFAULT_CHECKIN_START: "15:00",
       DEFAULT_CHECKIN_END: "21:00",
       DEFAULT_CHECKOUT: "10:00",
@@ -2322,9 +2335,10 @@
     }
 
     function normalizePhoneForTel(value) {
-      return String(value || "")
-        .replace(/[０-９]/g, (char) => String(char.charCodeAt(0) - 0xfee0))
-        .replace(/[^0-9+]/g, "");
+      let phone = String(value || "").normalize("NFKC").trim().replace(/[^0-9+]/g, "");
+      if (phone.startsWith("+81")) phone = `0${phone.slice(3)}`;
+      else if (phone.startsWith("0081")) phone = `0${phone.slice(4)}`;
+      return phone.replace(/\D/g, "");
     }
 
     function extractPhone(value) {

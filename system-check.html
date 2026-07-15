@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#123f38">
   <meta name="format-detection" content="telephone=no">
   <meta name="description" content="DPRO 宿泊・民泊 LINE 営業前システムチェック">
-  <title>DPROステイ｜営業前システムチェック STEP STAY-9-R1</title>
+  <title>DPROステイ｜営業前システムチェック STEP STAY-11</title>
   <style>
     :root{
       --ink:#17231f;--muted:#66756f;--brand:#174f46;--brand-strong:#0c3d35;
@@ -220,6 +220,14 @@
       .check-item>.badge{grid-column:2;justify-self:start}
     }
   </style>
+<style id="stay11-visual-upgrade">
+
+:root{--content:1340px;--brand:#0d5c50;--brand-strong:#063d35;--line:#cedbd7;--shadow:0 15px 40px rgba(5,59,52,.12)}
+body{font-size:15px}.topbar-inner{min-height:70px}.brand-mark{width:43px;height:43px}.brand-name{font-size:17px}.brand-sub{font-size:11px}.top-button{min-height:42px;padding:9px 13px;font-size:12px}.hero{padding:27px;border-radius:23px}.hero h1{font-size:clamp(38px,4.5vw,54px)}.hero p{font-size:14px}.hero-date{min-width:240px;padding:15px}.hero-date .label{font-size:10px}.hero-date .value{font-size:17px}.status-row{gap:11px}.status-summary{padding:16px}.status-summary .number{font-size:31px}.status-summary .label{font-size:11px}.control-card{padding:16px}.field label{font-size:10px}input{min-height:48px;font-size:14px}.primary,.secondary,.outline,.danger{min-height:47px;font-size:13px}.grid{grid-template-columns:minmax(0,1.08fr) minmax(390px,.92fr);gap:14px}.stack{gap:14px}.panel{padding:19px;border-color:#cbd9d5;border-radius:18px;box-shadow:0 9px 25px rgba(5,59,52,.07)}.panel h2{font-size:22px}.panel p{font-size:11px}.check-list{gap:9px}.check-item{grid-template-columns:43px minmax(0,1fr) auto;padding:13px;border-radius:13px}.check-icon{width:43px;height:43px;font-size:19px}.check-main strong{font-size:14px}.check-main span{font-size:10px}.badge{min-height:30px;padding:5px 9px;font-size:10px}.count-grid{gap:9px}.metric{padding:14px}.metric .number{font-size:26px}.metric .label{font-size:10px}.screen-link{padding:14px}.screen-link strong{font-size:13px}.screen-link span{font-size:9px}.manual-row{padding:12px}.manual-row input{width:21px;min-height:21px}.manual-row strong{font-size:13px}.manual-row span{font-size:10px}.result-box{padding:20px}.result-box .result-icon{font-size:38px}.result-box h3{font-size:22px}.raw{font-size:10px;line-height:1.6}
+@media(max-width:950px){.grid{grid-template-columns:1fr}.control-grid{grid-template-columns:1fr 1fr}.control-grid .field{grid-column:1/-1}}
+@media(max-width:640px){.shell{width:min(calc(100% - 14px),var(--content))}.hero{padding:20px 17px}.hero h1{font-size:36px}.status-row{grid-template-columns:repeat(2,minmax(0,1fr))}.control-grid{grid-template-columns:1fr}.control-grid .field{grid-column:auto}.count-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.link-grid{grid-template-columns:1fr}}
+
+</style>
 </head>
 <body>
 <header class="topbar">
@@ -229,8 +237,8 @@
       <span><span class="brand-name" id="facilityNameHeader">DPROステイ</span><span class="brand-sub">営業前システムチェック</span></span>
     </div>
     <div class="top-actions">
-      <a class="top-button" href="owner.html?demo=1"><span>PC管理</span></a>
-      <a class="top-button" href="owner-ipad.html?demo=1"><span>iPad</span></a>
+      <a class="top-button" href="owner.html?demo=1&v=stay-11"><span>PC管理</span></a>
+      <a class="top-button" href="owner-ipad.html?demo=1&v=stay-11"><span>iPad</span></a>
       <button class="top-button" id="reloadButton" type="button">↻ <span class="label">再チェック</span></button>
     </div>
   </div>
@@ -329,7 +337,7 @@
 </main>
 
 <footer class="footer">
-  <div class="shell">DPRO 宿泊・民泊 LINE｜STEP STAY-9-R1｜system-check.html</div>
+  <div class="shell">DPRO 宿泊・民泊 LINE｜STEP STAY-11｜system-check.html</div>
 </footer>
 
 <div class="toast-region" id="toastRegion" aria-live="polite"></div>
@@ -340,7 +348,7 @@
 const CONFIG=Object.freeze({
   API_BASE:"https://dpro-stay-line-api.dpromstk2000.workers.dev",
   FACILITY_CODE:"dpro_stay_demo",
-  VERSION:"STAY-9-R1",
+  VERSION:"STAY-11-SYSTEM-CHECK-VISUAL-20260715",
   DEMO_RESERVATION_NUMBER:"STAY-DEMO-002",
   DEMO_PHONE:"090-9999-2222"
 });
@@ -635,11 +643,11 @@ function renderMetrics(){
 function renderLinks(){
   const base="https://dpromstk2000-lab.github.io/dpro-stay-line";
   const links=[
-    ["宿泊者入口","index.html?demo=1&v=stay-9","予約確認・到着時間・問い合わせ"],
-    ["宿泊者マイページ","member.html?demo=1&v=stay-9","予約・アクセス・Wi-Fi・ルール"],
-    ["オーナーPC","owner.html?demo=1&v=stay-9","予約・清掃・問い合わせ・設定"],
-    ["オーナーiPad","owner-ipad.html?demo=1&v=stay-9","部屋別の当日運営"],
-    ["スタッフ業務","staff.html?demo=1&v=stay-9","今日＋未完了の担当業務"],
+    ["宿泊者入口","index.html?demo=1&v=stay-11","予約確認・到着時間・問い合わせ"],
+    ["宿泊者マイページ","member.html?demo=1&v=stay-11","予約・アクセス・Wi-Fi・ルール"],
+    ["オーナーPC","owner.html?demo=1&v=stay-11","予約・清掃・問い合わせ・設定"],
+    ["オーナーiPad","owner-ipad.html?demo=1&v=stay-11","部屋別の当日運営"],
+    ["スタッフ業務","staff.html?demo=1&v=stay-11","今日＋未完了の担当業務"],
     ["Worker health","https://dpro-stay-line-api.dpromstk2000.workers.dev/api/health","API・DB接続確認"]
   ];
   els.screenLinks.innerHTML=links.map(([title,path,description])=>{
@@ -953,8 +961,7 @@ function extractNormalizedPhone(value){
 
 function normalizePhoneForCheck(value){
   let phone=String(value||"")
-    .replace(/[０-９]/g,char=>String(char.charCodeAt(0)-0xfee0))
-    .replace(/＋/g,"+")
+    .normalize("NFKC")
     .replace(/[^0-9+]/g,"");
   if(phone.startsWith("+81"))phone=`0${phone.slice(3)}`;
   else if(phone.startsWith("0081"))phone=`0${phone.slice(4)}`;
