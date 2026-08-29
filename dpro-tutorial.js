@@ -1,0 +1,65 @@
+(()=>{
+'use strict';
+const STORAGE_KEY='DPRO_TUTORIAL_STAY_V1_1';
+const VERSION='STAY-TUTORIAL-STANDARD-V1.1-R3';
+const STEPS=[
+{id:'STAY-F10-01',route:'demo-guide.html',selectors:['#heroTitle','.hero h1','section.hero'],title:'公開操作デモの全体像',copy:'まずSTAYの公開デモ全体と、確認する画面の構成を把握します。',safe:'見出し表示のみ。フォーム送信・認証・データ更新は行いません。',resumeKey:'stay:first10:01'},
+{id:'STAY-F10-02',route:'demo-guide.html',selectors:['#screenGrid','#flowGrid','.grid'],title:'画面構成と役割を確認',copy:'宿泊者・スタッフ・オーナーの各画面がどう分かれているか確認します。',safe:'案内カードの表示のみ。リンクの自動クリックやデモ初期化は行いません。',resumeKey:'stay:first10:02'},
+{id:'STAY-F10-03',route:'index.html',selectors:['#heroTitle','.hero h1','main .hero h1'],title:'宿泊者サポート入口',copy:'予約後の宿泊者が使う公開サポート画面の入口を確認します。',safe:'plain URLの表示のみ。入力・送信は行いません。',resumeKey:'stay:first10:03'},
+{id:'STAY-F10-04',route:'index.html#reservation',selectors:['#reservationTitle','#reservation','section#reservation h2'],title:'予約確認の入口',copy:'予約番号と電話番号で予約を確認する領域を見ます。ここでは入力・検索は実行しません。',safe:'見出しだけを対象にし、予約照合フォームは送信しません。',resumeKey:'stay:first10:04'},
+{id:'STAY-F10-05',route:'index.html#arrival',selectors:['#arrivalTitle','#arrival','section#arrival h2'],title:'到着予定時間の案内',copy:'到着予定時間を30分単位で連絡できる領域を確認します。送信はしません。',safe:'見出しだけを対象にし、到着時間のPOSTは実行しません。',resumeKey:'stay:first10:05'},
+{id:'STAY-F10-06',route:'index.html#inquiry',selectors:['#inquiryTitle','#inquiry','section#inquiry h2'],title:'問い合わせ窓口',copy:'宿泊前・滞在中の問い合わせ領域を確認します。内容の入力や送信は行いません。',safe:'見出しのみを対象にし、問い合わせPOSTは実行しません。',resumeKey:'stay:first10:06'},
+{id:'STAY-F10-07',route:'index.html#lost',selectors:['#lostTitle','#lost','section#lost h2'],title:'忘れ物問い合わせ',copy:'チェックアウト後の忘れ物問い合わせ領域を確認します。登録は行いません。',safe:'見出しのみを対象にし、忘れ物登録POSTは実行しません。',resumeKey:'stay:first10:07'},
+{id:'STAY-F10-08',route:'member.html',selectors:['#authTitle','#authSection','#authForm'],title:'宿泊者マイページの本人確認入口',copy:'予約確認済み宿泊者向けマイページの入口を確認します。認証情報は入力しません。',safe:'plain URLの認証前表示だけを使い、認証フォームは送信しません。',resumeKey:'stay:first10:08'},
+{id:'STAY-F10-09',route:'staff.html',selectors:['#loginView .logincard h1','#loginView','#loginForm'],title:'スタッフ業務画面の入口',copy:'清掃・問い合わせ・忘れ物を扱うスタッフ画面の入口だけ確認します。',safe:'plain URLのログイン前表示のみ。管理コード入力・送信・demo準備は行いません。',resumeKey:'stay:first10:09'},
+{id:'STAY-F10-10',route:'owner.html',selectors:['#login .logincard h1','#login','#loginForm'],title:'施設オーナー管理画面の入口',copy:'予約・清掃・問い合わせ・施設設定を管理するPC画面の入口を確認してFirst10を終了します。',safe:'plain URLのログイン前表示のみ。認証・保存・業務更新は行いません。',resumeKey:'stay:first10:10'}
+];
+let memState=null, currentTarget=null, drag=null, renderToken=0;
+const $=id=>document.getElementById(id);
+const clamp=(v,min,max)=>Math.min(Math.max(v,min),Math.max(min,max));
+function readState(){
+  try{const raw=localStorage.getItem(STORAGE_KEY);if(raw){const s=JSON.parse(raw);if(s&&s.version===VERSION)return s;}}catch{}
+  return memState||{version:VERSION,step:0,active:false,resumable:false,completed:false,resumeKey:null};
+}
+function writeState(patch){const next={...readState(),...patch,version:VERSION,updatedAt:new Date().toISOString()};memState=next;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(next));}catch{}refreshLauncher();return next;}
+function pageName(){return location.pathname.split('/').filter(Boolean).pop()||'index.html';}
+function routeParts(route){const i=route.indexOf('#');return{page:i>=0?route.slice(0,i):route,hash:i>=0?route.slice(i):''};}
+function samePage(route){return routeParts(route).page===pageName();}
+function ensureUi(){
+  if($('dproTutCard'))return;
+  const launcher=document.createElement('div');launcher.id='dproTutLauncher';launcher.innerHTML=`<button class="dpro-tut-launch" id="dproTutLaunch" type="button" aria-expanded="false">操作チュートリアル</button><div class="dpro-tut-mini" aria-label="チュートリアル操作"><button id="dproTutStart" type="button">開始</button><button id="dproTutResume" type="button" hidden>再開</button><button id="dproTutReplay" type="button">もう一度</button></div>`;
+  const shade=document.createElement('div');shade.id='dproTutShade';shade.hidden=true;
+  const hi=document.createElement('div');hi.id='dproTutHighlight';hi.hidden=true;
+  const card=document.createElement('section');card.id='dproTutCard';card.hidden=true;card.setAttribute('role','dialog');card.setAttribute('aria-label','DPRO操作チュートリアル');card.innerHTML=`<div class="dpro-tut-handle" id="dproTutDrag" aria-label="チュートリアルカードを移動"><span>⋮⋮ ドラッグで移動</span><strong id="dproTutCounter">1 / 10</strong><button class="dpro-tut-close" id="dproTutClose" type="button" aria-label="閉じる">×</button></div><div class="dpro-tut-body"><p class="dpro-tut-step" id="dproTutStepId"></p><h2 class="dpro-tut-title" id="dproTutTitle" tabindex="-1"></h2><p class="dpro-tut-copy" id="dproTutCopy"></p><div class="dpro-tut-safe" id="dproTutSafe"></div><div class="dpro-tut-fallback" id="dproTutFallback" hidden></div><div class="dpro-tut-progress"><span id="dproTutProgress"></span></div><div class="dpro-tut-actions"><button class="dpro-tut-back" id="dproTutBack" type="button">戻る</button><button class="dpro-tut-skip" id="dproTutSkip" type="button">スキップ</button><button class="dpro-tut-next" id="dproTutNext" type="button">次へ</button></div></div>`;
+  document.body.append(launcher,shade,hi,card);
+  $('dproTutLaunch').addEventListener('click',()=>{const open=launcher.dataset.open==='1';launcher.dataset.open=open?'0':'1';$('dproTutLaunch').setAttribute('aria-expanded',open?'false':'true');});
+  $('dproTutStart').addEventListener('click',()=>start(false));$('dproTutResume').addEventListener('click',resume);$('dproTutReplay').addEventListener('click',()=>start(true));
+  $('dproTutClose').addEventListener('click',pause);$('dproTutSkip').addEventListener('click',skip);$('dproTutBack').addEventListener('click',back);$('dproTutNext').addEventListener('click',next);
+  const handle=$('dproTutDrag');handle.addEventListener('pointerdown',beginDrag);handle.addEventListener('pointermove',moveDrag);handle.addEventListener('pointerup',endDrag);handle.addEventListener('pointercancel',endDrag);
+  window.addEventListener('resize',()=>{clampCard();positionHighlight();});window.addEventListener('scroll',positionHighlight,{passive:true});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!card.hidden){e.preventDefault();pause();}});
+  refreshLauncher();
+}
+function refreshLauncher(){if(!$('dproTutLauncher'))return;const s=readState();$('dproTutResume').hidden=!(s.resumable&&!s.completed);}
+function start(replay){writeState({step:0,active:true,resumable:true,completed:false,resumeKey:STEPS[0].resumeKey,replayed:Boolean(replay)});$('dproTutLauncher').dataset.open='0';goToStep(0,true);}
+function resume(){const s=readState();const idx=clamp(Number(s.step)||0,0,STEPS.length-1);writeState({active:true,resumable:true,resumeKey:STEPS[idx].resumeKey});$('dproTutLauncher').dataset.open='0';goToStep(idx,true);}
+function replay(){start(true);}
+function pause(){const s=readState();writeState({active:false,resumable:!s.completed,resumeKey:STEPS[clamp(Number(s.step)||0,0,9)].resumeKey});hideTutorial();$('dproTutLaunch')?.focus();}
+function skip(){writeState({active:false,resumable:false,completed:true,step:STEPS.length-1,resumeKey:STEPS[STEPS.length-1].resumeKey,skipped:true});hideTutorial();$('dproTutLaunch')?.focus();}
+function next(){const s=readState(),idx=clamp(Number(s.step)||0,0,STEPS.length-1);if(idx>=STEPS.length-1){writeState({active:false,resumable:false,completed:true,step:idx,resumeKey:STEPS[idx].resumeKey,skipped:false});hideTutorial();$('dproTutLaunch')?.focus();return;}goToStep(idx+1,true);}
+function back(){const s=readState(),idx=clamp(Number(s.step)||0,0,STEPS.length-1);if(idx<=0)return;goToStep(idx-1,true);}
+function goToStep(index,navigate){const idx=clamp(index,0,STEPS.length-1),step=STEPS[idx];writeState({step:idx,active:true,resumable:true,completed:false,resumeKey:step.resumeKey});const parts=routeParts(step.route);if(!samePage(step.route)&&navigate){location.assign(step.route);return;}if(parts.hash&&location.hash!==parts.hash){history.replaceState(null,'',parts.hash);}renderStep(idx);}
+async function resolveTarget(step,token){for(let i=0;i<step.selectors.length;i++){let el=null;try{el=document.querySelector(step.selectors[i]);}catch{}if(!el)continue;if(!isRenderable(el))continue;try{el.scrollIntoView({behavior:'smooth',block:'center',inline:'nearest'});}catch{}await new Promise(r=>setTimeout(r,90));if(token!==renderToken)return null;if(isOnCanvas(el))return{el,selector:step.selectors[i],fallback:i>0};}return null;}
+function isRenderable(el){if(!el||!el.isConnected)return false;const cs=getComputedStyle(el),r=el.getBoundingClientRect();return cs.display!=='none'&&cs.visibility!=='hidden'&&Number(cs.opacity)!==0&&r.width>1&&r.height>1;}
+function isOnCanvas(el){const r=el.getBoundingClientRect(),vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;return r.right>0&&r.bottom>0&&r.left<vw&&r.top<vh;}
+async function renderStep(index){ensureUi();const token=++renderToken,step=STEPS[index];const card=$('dproTutCard'),hi=$('dproTutHighlight'),shade=$('dproTutShade');card.hidden=false;shade.hidden=false;$('dproTutCounter').textContent=`${index+1} / ${STEPS.length}`;$('dproTutStepId').textContent=step.id;$('dproTutTitle').textContent=step.title;$('dproTutCopy').textContent=step.copy;$('dproTutSafe').textContent=step.safe;$('dproTutProgress').style.width=`${((index+1)/STEPS.length)*100}%`;$('dproTutBack').disabled=index===0;$('dproTutNext').textContent=index===STEPS.length-1?'完了':'次へ';const result=await resolveTarget(step,token);if(token!==renderToken)return;currentTarget=result?.el||null;const fb=$('dproTutFallback');if(result){hi.hidden=false;fb.hidden=!result.fallback;fb.textContent=result.fallback?`安全な代替対象で表示中：${result.selector}`:'';positionHighlight();}else{hi.hidden=true;fb.hidden=false;fb.textContent='対象が非表示または画面外のため、ページ全体を安全な案内対象として続行します。';currentTarget=null;}clampCard();card.classList.add('dpro-tut-focus-ring');setTimeout(()=>card.classList.remove('dpro-tut-focus-ring'),500);$('dproTutTitle').focus({preventScroll:true});}
+function positionHighlight(){const hi=$('dproTutHighlight');if(!hi||hi.hidden||!currentTarget||!currentTarget.isConnected)return;const r=currentTarget.getBoundingClientRect(),vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight,p=6;const left=clamp(r.left-p,4,vw-8),top=clamp(r.top-p,4,vh-8),right=clamp(r.right+p,8,vw-4),bottom=clamp(r.bottom+p,8,vh-4);hi.style.left=`${left}px`;hi.style.top=`${top}px`;hi.style.width=`${Math.max(8,right-left)}px`;hi.style.height=`${Math.max(8,bottom-top)}px`;}
+function hideTutorial(){renderToken++;currentTarget=null;if($('dproTutCard'))$('dproTutCard').hidden=true;if($('dproTutHighlight'))$('dproTutHighlight').hidden=true;if($('dproTutShade'))$('dproTutShade').hidden=true;}
+function beginDrag(e){if(e.button!==undefined&&e.button!==0)return;const card=$('dproTutCard');if(!card||card.hidden)return;const r=card.getBoundingClientRect();drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};card.style.left=`${r.left}px`;card.style.top=`${r.top}px`;card.style.right='auto';card.style.bottom='auto';try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}e.preventDefault();}
+function moveDrag(e){if(!drag||e.pointerId!==drag.id)return;const card=$('dproTutCard'),vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;const x=clamp(e.clientX-drag.dx,4,vw-card.offsetWidth-4),y=clamp(e.clientY-drag.dy,4,vh-card.offsetHeight-4);card.style.left=`${x}px`;card.style.top=`${y}px`;e.preventDefault();}
+function endDrag(e){if(!drag||e.pointerId!==drag.id)return;try{e.currentTarget.releasePointerCapture(e.pointerId);}catch{}drag=null;clampCard();}
+function clampCard(){const card=$('dproTutCard');if(!card||card.hidden)return;const r=card.getBoundingClientRect(),vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;let left=r.left,top=r.top;if(r.right>vw-4)left=vw-r.width-4;if(r.bottom>vh-4)top=vh-r.height-4;if(left<4)left=4;if(top<4)top=4;if(card.style.left||card.style.top){card.style.left=`${Math.max(4,left)}px`;card.style.top=`${Math.max(4,top)}px`;card.style.right='auto';card.style.bottom='auto';}}
+function boot(){ensureUi();const s=readState();if(s.active&&!s.completed){const idx=clamp(Number(s.step)||0,0,STEPS.length-1),step=STEPS[idx];if(samePage(step.route))renderStep(idx);}}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.DPROStayTutorial={version:VERSION,steps:STEPS.map(x=>({...x})),start:()=>start(false),resume,replay,state:()=>({...readState()}),debug:()=>({targetSelector:currentTarget?.id?`#${currentTarget.id}`:currentTarget?.tagName||null,cardHidden:$('dproTutCard')?.hidden})};
+})();
