@@ -1,0 +1,178 @@
+name: STAY R5 Public Screenshot Capture
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/stay-r5-public-capture.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify newest R4 source forward-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          grep -q 'STAY-R4-GUIDE-CENTER' dpro-tutorial.js
+          grep -q 'STAY-TUTORIAL-STANDARD-V1.1-R4' dpro-tutorial.js
+          grep -q 'STAY-R3-FIX01-CLOSE-DRAG-GUARD' dpro-tutorial.js
+          test "$(grep -o 'STAY-F10-[0-9][0-9]' dpro-tutorial.js | sort -u | wc -l | tr -d ' ')" = "10"
+          echo "repo_head=$(git rev-parse HEAD)"
+          echo "app_source=$(git log -1 --format=%H -- dpro-tutorial.js)"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright outside repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/stay-r5-capture"
+          cd "$RUNNER_TEMP/stay-r5-capture"
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 --no-save
+          npx playwright install --with-deps chromium
+
+      - name: Write capture runner
+        shell: python
+        run: |
+          import base64, os
+          from pathlib import Path
+          data = (
+              "aW1wb3J0IHsgY2hyb21pdW0gfSBmcm9tICdwbGF5d3JpZ2h0JzsKaW1wb3J0IGZzIGZyb20gJ2ZzJzsKCmNvbnN0IEJBU0U9J2h0"
+              "dHBzOi8vZHByb21zdGsyMDAwLWxhYi5naXRodWIuaW8vZHByby1zdGF5LWxpbmUvJzsKY29uc3QgS0VZPSdEUFJPX1RVVE9SSUFM"
+              "X1NUQVlfVjFfMSc7CmNvbnN0IE9VVD0ncjUtY2FwdHVyZXMnOwpmcy5ta2RpclN5bmMoT1VULHtyZWN1cnNpdmU6dHJ1ZX0pOwoK"
+              "Y29uc3QgcmVwb3J0PXsKICBwaGFzZTonUjVfQ0FQVFVSRScsCiAgc291cmNlOidQVUJMSUNfR0lUSFVCX1BBR0VTJywKICBiYXNl"
+              "OkJBU0UsCiAgY2hlY2tlZF9hdDpuZXcgRGF0ZSgpLnRvSVNPU3RyaW5nKCksCiAgcjRfbWFya2VyOmZhbHNlLAogIGZpcnN0MTBf"
+              "Y291bnQ6bnVsbCwKICBndWlkZV9jb3VudDpudWxsLAogIHNjcmVlbnNob3RzOltdLAogIHVuc2FmZV93cml0ZV9yZXF1ZXN0czpb"
+              "XSwKICBidXNpbmVzc19tdXRhdGlvbjowLAogIGVycm9yczpbXSwKICBwYXNzOmZhbHNlCn07CgpmdW5jdGlvbiBzYWZlTmFtZShz"
+              "KXtyZXR1cm4gcy5yZXBsYWNlKC9bXmEtejAtOV8tXSsvZ2ksJ18nKS50b0xvd2VyQ2FzZSgpO30KYXN5bmMgZnVuY3Rpb24gd2Fp"
+              "dFR1dG9yaWFsKHBhZ2UpewogIGF3YWl0IHBhZ2Uud2FpdEZvckZ1bmN0aW9uKCgpPT53aW5kb3cuRFBST1N0YXlUdXRvcmlhbD8u"
+              "c3RlcHM/Lmxlbmd0aD09PTEwICYmIHdpbmRvdy5EUFJPU3RheVR1dG9yaWFsPy5ndWlkZUNvdW50PT09MTAse3RpbWVvdXQ6MjAw"
+              "MDB9KTsKfQphc3luYyBmdW5jdGlvbiBpbnN0YWxsV3JpdGVHdWFyZChwYWdlKXsKICBhd2FpdCBwYWdlLnJvdXRlKCcqKi8qJywg"
+              "YXN5bmMgcm91dGU9PnsKICAgIGNvbnN0IHJlcT1yb3V0ZS5yZXF1ZXN0KCk7CiAgICBpZighWydHRVQnLCdIRUFEJywnT1BUSU9O"
+              "UyddLmluY2x1ZGVzKHJlcS5tZXRob2QoKSkpewogICAgICByZXBvcnQudW5zYWZlX3dyaXRlX3JlcXVlc3RzLnB1c2goe21ldGhv"
+              "ZDpyZXEubWV0aG9kKCksdXJsOnJlcS51cmwoKX0pOwogICAgICBhd2FpdCByb3V0ZS5hYm9ydCgpOwogICAgICByZXR1cm47CiAg"
+              "ICB9CiAgICBhd2FpdCByb3V0ZS5jb250aW51ZSgpOwogIH0pOwp9CmFzeW5jIGZ1bmN0aW9uIHNob3QocGFnZSxuYW1lKXsKICBj"
+              "b25zdCBmaWxlPWAke09VVH0vJHtuYW1lfS5wbmdgOwogIGF3YWl0IHBhZ2Uuc2NyZWVuc2hvdCh7cGF0aDpmaWxlLGZ1bGxQYWdl"
+              "OmZhbHNlfSk7CiAgY29uc3QgYm94PWF3YWl0IHBhZ2UuZXZhbHVhdGUoKCk9Pih7CiAgICB1cmw6bG9jYXRpb24uaHJlZiwKICAg"
+              "IHdpZHRoOmlubmVyV2lkdGgsCiAgICBoZWlnaHQ6aW5uZXJIZWlnaHQsCiAgICBkb2NTY3JvbGxXaWR0aDpkb2N1bWVudC5kb2N1"
+              "bWVudEVsZW1lbnQuc2Nyb2xsV2lkdGgsCiAgICBib2R5U2Nyb2xsV2lkdGg6ZG9jdW1lbnQuYm9keS5zY3JvbGxXaWR0aCwKICAg"
+              "IHRpdGxlOmRvY3VtZW50LnRpdGxlCiAgfSkpOwogIHJlcG9ydC5zY3JlZW5zaG90cy5wdXNoKHtuYW1lLGZpbGUsLi4uYm94fSk7"
+              "Cn0KYXN5bmMgZnVuY3Rpb24gc2V0U3RhdGUocGFnZSxzdGVwLGFjdGl2ZT10cnVlKXsKICBhd2FpdCBwYWdlLmV2YWx1YXRlKCh7"
+              "a2V5LHN0ZXAsYWN0aXZlfSk9PnsKICAgIGNvbnN0IHN0ZXBzPXdpbmRvdy5EUFJPU3RheVR1dG9yaWFsLnN0ZXBzOwogICAgbG9j"
+              "YWxTdG9yYWdlLnNldEl0ZW0oa2V5LEpTT04uc3RyaW5naWZ5KHsKICAgICAgdmVyc2lvbjonU1RBWS1UVVRPUklBTC1TVEFOREFS"
+              "RC1WMS4xLVI0JywKICAgICAgc3RlcCwKICAgICAgYWN0aXZlLAogICAgICByZXN1bWFibGU6dHJ1ZSwKICAgICAgY29tcGxldGVk"
+              "OmZhbHNlLAogICAgICByZXN1bWVLZXk6c3RlcHNbc3RlcF0ucmVzdW1lS2V5LAogICAgICB1cGRhdGVkQXQ6bmV3IERhdGUoKS50"
+              "b0lTT1N0cmluZygpCiAgICB9KSk7CiAgfSx7a2V5OktFWSxzdGVwLGFjdGl2ZX0pOwp9Cgpjb25zdCBicm93c2VyPWF3YWl0IGNo"
+              "cm9taXVtLmxhdW5jaCh7aGVhZGxlc3M6dHJ1ZX0pOwp0cnl7CiAgLy8gRGVza3RvcCBldmlkZW5jZS4KICBjb25zdCBjdHg9YXdh"
+              "aXQgYnJvd3Nlci5uZXdDb250ZXh0KHt2aWV3cG9ydDp7d2lkdGg6MTQ0MCxoZWlnaHQ6MTAwMH19KTsKICBjb25zdCBwYWdlPWF3"
+              "YWl0IGN0eC5uZXdQYWdlKCk7CiAgYXdhaXQgaW5zdGFsbFdyaXRlR3VhcmQocGFnZSk7CgogIGF3YWl0IHBhZ2UuZ290byhCQVNF"
+              "KydkZW1vLWd1aWRlLmh0bWwnLHt3YWl0VW50aWw6J25ldHdvcmtpZGxlJyx0aW1lb3V0OjMwMDAwfSk7CiAgYXdhaXQgd2FpdFR1"
+              "dG9yaWFsKHBhZ2UpOwogIHJlcG9ydC5yNF9tYXJrZXI9YXdhaXQgcGFnZS5ldmFsdWF0ZSgoKT0+ZG9jdW1lbnQuZG9jdW1lbnRF"
+              "bGVtZW50LmlubmVySFRNTC5pbmNsdWRlcygnZHByby10dXRvcmlhbCcpICYmIHdpbmRvdy5EUFJPU3RheVR1dG9yaWFsLnZlcnNp"
+              "b249PT0nU1RBWS1UVVRPUklBTC1TVEFOREFSRC1WMS4xLVI0Jyk7CiAgcmVwb3J0LmZpcnN0MTBfY291bnQ9YXdhaXQgcGFnZS5l"
+              "dmFsdWF0ZSgoKT0+d2luZG93LkRQUk9TdGF5VHV0b3JpYWwuc3RlcHMubGVuZ3RoKTsKICByZXBvcnQuZ3VpZGVfY291bnQ9YXdh"
+              "aXQgcGFnZS5ldmFsdWF0ZSgoKT0+d2luZG93LkRQUk9TdGF5VHV0b3JpYWwuZ3VpZGVDb3VudCk7CgogIGF3YWl0IHBhZ2UuZXZh"
+              "bHVhdGUoaz0+bG9jYWxTdG9yYWdlLnJlbW92ZUl0ZW0oayksS0VZKTsKICBhd2FpdCBwYWdlLnJlbG9hZCh7d2FpdFVudGlsOidu"
+              "ZXR3b3JraWRsZSd9KTsKICBhd2FpdCB3YWl0VHV0b3JpYWwocGFnZSk7CiAgYXdhaXQgcGFnZS5ldmFsdWF0ZSgoKT0+d2luZG93"
+              "LkRQUk9TdGF5VHV0b3JpYWwub3Blbkd1aWRlKCkpOwogIGF3YWl0IHBhZ2Uud2FpdEZvclNlbGVjdG9yKCcjZHByb0d1aWRlQ2Vu"
+              "dGVyOm5vdChbaGlkZGVuXSknKTsKICBhd2FpdCBzaG90KHBhZ2UsJzAxX2d1aWRlX2NlbnRlcl9kZXNrdG9wJyk7CgogIGF3YWl0"
+              "IHBhZ2UuY2xpY2soJyNkcHJvR3VpZGVTdGFydCcpOwogIGF3YWl0IHBhZ2Uud2FpdEZvclNlbGVjdG9yKCcjZHByb1R1dENhcmQ6"
+              "bm90KFtoaWRkZW5dKScpOwogIGF3YWl0IHBhZ2Uud2FpdEZvckZ1bmN0aW9uKCgpPT5kb2N1bWVudC5hY3RpdmVFbGVtZW50Py5p"
+              "ZD09PSdkcHJvVHV0VGl0bGUnLHt0aW1lb3V0OjUwMDB9KTsKICBhd2FpdCBzaG90KHBhZ2UsJzAyX3R1dG9yaWFsX3N0ZXAwMV9k"
+              "ZXNrdG9wJyk7CgogIGNvbnN0IGNhc2VzPVsKICAgIHtuYW1lOicwM19zdGVwMDRfcmVzZXJ2YXRpb25fZGVza3RvcCcscm91dGU6"
+              "J2luZGV4Lmh0bWwjcmVzZXJ2YXRpb24nLHN0ZXA6M30sCiAgICB7bmFtZTonMDRfc3RlcDA1X2Fycml2YWxfZGVza3RvcCcscm91"
+              "dGU6J2luZGV4Lmh0bWwjYXJyaXZhbCcsc3RlcDo0fSwKICAgIHtuYW1lOicwNV9zdGVwMDhfbWVtYmVyX2Rlc2t0b3AnLHJvdXRl"
+              "OidtZW1iZXIuaHRtbCcsc3RlcDo3fSwKICAgIHtuYW1lOicwNl9zdGVwMDlfc3RhZmZfZGVza3RvcCcscm91dGU6J3N0YWZmLmh0"
+              "bWwnLHN0ZXA6OH0sCiAgICB7bmFtZTonMDdfc3RlcDEwX293bmVyX2Rlc2t0b3AnLHJvdXRlOidvd25lci5odG1sJyxzdGVwOjl9"
+              "CiAgXTsKICBmb3IoY29uc3QgYyBvZiBjYXNlcyl7CiAgICBhd2FpdCBwYWdlLmdvdG8oQkFTRStjLnJvdXRlLHt3YWl0VW50aWw6"
+              "J25ldHdvcmtpZGxlJyx0aW1lb3V0OjMwMDAwfSk7CiAgICBhd2FpdCB3YWl0VHV0b3JpYWwocGFnZSk7CiAgICBhd2FpdCBzZXRT"
+              "dGF0ZShwYWdlLGMuc3RlcCx0cnVlKTsKICAgIGF3YWl0IHBhZ2UucmVsb2FkKHt3YWl0VW50aWw6J25ldHdvcmtpZGxlJ30pOwog"
+              "ICAgYXdhaXQgd2FpdFR1dG9yaWFsKHBhZ2UpOwogICAgYXdhaXQgcGFnZS53YWl0Rm9yU2VsZWN0b3IoJyNkcHJvVHV0Q2FyZDpu"
+              "b3QoW2hpZGRlbl0pJyx7dGltZW91dDoxMDAwMH0pOwogICAgYXdhaXQgcGFnZS53YWl0Rm9yRnVuY3Rpb24oKCk9PmRvY3VtZW50"
+              "LmFjdGl2ZUVsZW1lbnQ/LmlkPT09J2Rwcm9UdXRUaXRsZScse3RpbWVvdXQ6NTAwMH0pOwogICAgYXdhaXQgc2hvdChwYWdlLGMu"
+              "bmFtZSk7CiAgfQogIGF3YWl0IGN0eC5jbG9zZSgpOwoKICAvLyBNb2JpbGUgZXZpZGVuY2UuCiAgY29uc3QgbWN0eD1hd2FpdCBi"
+              "cm93c2VyLm5ld0NvbnRleHQoe3ZpZXdwb3J0Ont3aWR0aDozOTAsaGVpZ2h0Ojg0NH0saGFzVG91Y2g6dHJ1ZSxpc01vYmlsZTpm"
+              "YWxzZX0pOwogIGNvbnN0IG1wPWF3YWl0IG1jdHgubmV3UGFnZSgpOwogIGF3YWl0IGluc3RhbGxXcml0ZUd1YXJkKG1wKTsKICBh"
+              "d2FpdCBtcC5nb3RvKEJBU0UrJ2RlbW8tZ3VpZGUuaHRtbCcse3dhaXRVbnRpbDonbmV0d29ya2lkbGUnLHRpbWVvdXQ6MzAwMDB9"
+              "KTsKICBhd2FpdCB3YWl0VHV0b3JpYWwobXApOwogIGF3YWl0IG1wLmV2YWx1YXRlKGs9PmxvY2FsU3RvcmFnZS5yZW1vdmVJdGVt"
+              "KGspLEtFWSk7CiAgYXdhaXQgbXAuZXZhbHVhdGUoKCk9PndpbmRvdy5EUFJPU3RheVR1dG9yaWFsLm9wZW5HdWlkZSgpKTsKICBh"
+              "d2FpdCBtcC53YWl0Rm9yU2VsZWN0b3IoJyNkcHJvR3VpZGVDZW50ZXI6bm90KFtoaWRkZW5dKScpOwogIGF3YWl0IHNob3QobXAs"
+              "JzA4X2d1aWRlX2NlbnRlcl9tb2JpbGVfMzkwJyk7CgogIGF3YWl0IG1wLmNsaWNrKCcjZHByb0d1aWRlU3RhcnQnKTsKICBhd2Fp"
+              "dCBtcC53YWl0Rm9yU2VsZWN0b3IoJyNkcHJvVHV0Q2FyZDpub3QoW2hpZGRlbl0pJyk7CiAgYXdhaXQgbXAud2FpdEZvckZ1bmN0"
+              "aW9uKCgpPT5kb2N1bWVudC5hY3RpdmVFbGVtZW50Py5pZD09PSdkcHJvVHV0VGl0bGUnLHt0aW1lb3V0OjUwMDB9KTsKICBhd2Fp"
+              "dCBzaG90KG1wLCcwOV90dXRvcmlhbF9zdGVwMDFfbW9iaWxlXzM5MCcpOwogIGF3YWl0IG1jdHguY2xvc2UoKTsKCiAgaWYocmVw"
+              "b3J0LnI0X21hcmtlciE9PXRydWUpIHRocm93IG5ldyBFcnJvcignUjQgcHVibGljIG1hcmtlci92ZXJzaW9uIG5vdCBjb25maXJt"
+              "ZWQnKTsKICBpZihyZXBvcnQuZmlyc3QxMF9jb3VudCE9PTEwIHx8IHJlcG9ydC5ndWlkZV9jb3VudCE9PTEwKSB0aHJvdyBuZXcg"
+              "RXJyb3IoJ0ZpcnN0MTAvR3VpZGUgY291bnQgbWlzbWF0Y2gnKTsKICBpZihyZXBvcnQuc2NyZWVuc2hvdHMubGVuZ3RoIT09OSkg"
+              "dGhyb3cgbmV3IEVycm9yKCdFeHBlY3RlZCA5IHNjcmVlbnNob3RzJyk7CiAgaWYocmVwb3J0LnVuc2FmZV93cml0ZV9yZXF1ZXN0"
+              "cy5sZW5ndGghPT0wKSB0aHJvdyBuZXcgRXJyb3IoJ1Vuc2FmZSB3cml0ZSByZXF1ZXN0IG9ic2VydmVkJyk7CiAgcmVwb3J0LnBh"
+              "c3M9dHJ1ZTsKfWNhdGNoKGUpewogIHJlcG9ydC5lcnJvcnMucHVzaChTdHJpbmcoZS5zdGFja3x8ZSkpOwp9ZmluYWxseXsKICBh"
+              "d2FpdCBicm93c2VyLmNsb3NlKCk7CiAgZnMud3JpdGVGaWxlU3luYygncjUtY2FwdHVyZS1ldmlkZW5jZS5qc29uJyxKU09OLnN0"
+              "cmluZ2lmeShyZXBvcnQsbnVsbCwyKSk7CiAgY29uc29sZS5sb2coSlNPTi5zdHJpbmdpZnkocmVwb3J0LG51bGwsMikpOwp9Cmlm"
+              "KCFyZXBvcnQucGFzcykgcHJvY2Vzcy5leGl0KDEpOwo="
+          )
+          p=Path(os.environ["RUNNER_TEMP"])/"stay-r5-capture"/"capture.mjs"
+          p.write_bytes(base64.b64decode(data))
+
+      - name: Capture exact public safe screenshots
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/stay-r5-capture"
+          node capture.mjs
+
+      - name: Collect capture evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp "$RUNNER_TEMP/stay-r5-capture/r5-capture-evidence.json" .
+          rm -rf r5-captures
+          cp -R "$RUNNER_TEMP/stay-r5-capture/r5-captures" ./r5-captures
+          python - <<'PY'
+          import json, subprocess
+          from pathlib import Path
+          p=Path('r5-capture-evidence.json')
+          d=json.loads(p.read_text(encoding='utf-8'))
+          d['repo_head_at_capture']=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          d['app_source_commit']=subprocess.check_output(['git','log','-1','--format=%H','--','dpro-tutorial.js'],text=True).strip()
+          p.write_text(json.dumps(d,ensure_ascii=False,indent=2),encoding='utf-8')
+          PY
+
+      - name: Upload R5 capture artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: STAY-R5-PUBLIC-SCREENSHOTS
+          path: |
+            r5-captures/*.png
+            r5-capture-evidence.json
+          if-no-files-found: error
+
+      - name: Remove temporary capture workflow
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git pull --rebase origin main
+          rm -f .github/workflows/stay-r5-public-capture.yml
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Remove STAY R5 capture workflow [skip ci]"
+            git push origin HEAD:main
+          fi
