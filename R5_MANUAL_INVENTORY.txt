@@ -1,0 +1,22 @@
+R5 STAY MANUAL INVENTORY
+
+Quick Start: DPRO_TUTORIAL_STAY_QUICK_START_V1.0.pdf
+  A4 portrait: PASS
+  pages: 1
+  rendered pages: 1/1
+  SHA256: 322e3ac62daf7daef3aeab6479f3c45dfb1b756d3f92f25908fb38d42439834c
+
+Detailed Manual: DPRO_TUTORIAL_STAY_DETAILED_MANUAL_V1.0.pdf
+  A4 portrait: PASS
+  pages: 6
+  rendered pages: 6/6
+  SHA256: a32c1d4713db5d3ba74ee16659a487f861cc9c0bfa920fe0a86dcbd36b19690a
+
+Final visual QA all 7 pages: PASS
+Rendered QR decode: 3/3 PASS
+QR destination exact public: https://dpromstk2000-lab.github.io/dpro-stay-line/demo-guide.html
+Current LIVE screenshots only: PASS
+PII sensitive real records: 0
+Secrets credentials: 0
+Business mutation: 0
+Publication: PENDING repo upload/public HTTP verification
