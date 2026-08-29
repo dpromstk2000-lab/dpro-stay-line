@@ -1,0 +1,109 @@
+name: STAY R5 PDF Root Fix
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/stay-r5-pdf-root-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Adopt newest main and protect R4 product source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git reset --hard origin/main
+          grep -q 'STAY-R4-GUIDE-CENTER' dpro-tutorial.js
+          grep -q 'STAY-TUTORIAL-STANDARD-V1.1-R4' dpro-tutorial.js
+          test "$(git log -1 --format=%H -- dpro-tutorial.js)" = "42ab1fe5d0dd724a2238f872c70faf2291ae9edc"
+
+      - name: Restore correct R5 PDFs and remove accidental QA upload
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 -d .github/workflows/stay-r5-quick.pdf.b64 > DPRO_TUTORIAL_STAY_QUICK_START_V1.0.pdf
+          base64 -d .github/workflows/stay-r5-detailed.pdf.b64 > DPRO_TUTORIAL_STAY_DETAILED_MANUAL_V1.0.pdf
+
+          echo "322e3ac62daf7daef3aeab6479f3c45dfb1b756d3f92f25908fb38d42439834c  DPRO_TUTORIAL_STAY_QUICK_START_V1.0.pdf" | sha256sum -c -
+          echo "a32c1d4713db5d3ba74ee16659a487f861cc9c0bfa920fe0a86dcbd36b19690a  DPRO_TUTORIAL_STAY_DETAILED_MANUAL_V1.0.pdf" | sha256sum -c -
+
+          rm -f DETAILED_FINAL_RENDER_PAGE_01.png
+          rm -f DETAILED_FINAL_RENDER_PAGE_02.png
+          rm -f DETAILED_FINAL_RENDER_PAGE_03.png
+          rm -f DETAILED_FINAL_RENDER_PAGE_04.png
+          rm -f DETAILED_FINAL_RENDER_PAGE_05.png
+          rm -f DETAILED_FINAL_RENDER_PAGE_06.png
+          rm -f QUICK_FINAL_RENDER_PAGE_01.png
+          rm -f R5_ALL_PAGES_FINAL_RENDER_CONTACT_SHEET.jpg
+          rm -f R5_MANUAL_INVENTORY.txt
+          rm -f R5_PRIVACY_SAFETY.txt
+          rm -f R5_QA_PRECHECK.json
+          rm -f R5_QR_QA.json
+          rm -f r5-capture-evidence.json
+          rm -rf r5-captures
+
+          rm -f .github/workflows/stay-r5-quick.pdf.b64
+          rm -f .github/workflows/stay-r5-detailed.pdf.b64
+          rm -f .github/workflows/stay-r5-pdf-root-fix.yml
+
+      - name: Verify exact changed scope
+        shell: python
+        run: |
+          import subprocess
+          allowed = {
+              "DPRO_TUTORIAL_STAY_QUICK_START_V1.0.pdf",
+              "DPRO_TUTORIAL_STAY_DETAILED_MANUAL_V1.0.pdf",
+              "DETAILED_FINAL_RENDER_PAGE_01.png",
+              "DETAILED_FINAL_RENDER_PAGE_02.png",
+              "DETAILED_FINAL_RENDER_PAGE_03.png",
+              "DETAILED_FINAL_RENDER_PAGE_04.png",
+              "DETAILED_FINAL_RENDER_PAGE_05.png",
+              "DETAILED_FINAL_RENDER_PAGE_06.png",
+              "QUICK_FINAL_RENDER_PAGE_01.png",
+              "R5_ALL_PAGES_FINAL_RENDER_CONTACT_SHEET.jpg",
+              "R5_MANUAL_INVENTORY.txt",
+              "R5_PRIVACY_SAFETY.txt",
+              "R5_QA_PRECHECK.json",
+              "R5_QR_QA.json",
+              "r5-capture-evidence.json",
+              "r5-captures/01_guide_center_desktop.png",
+              "r5-captures/02_tutorial_step01_desktop.png",
+              "r5-captures/03_step04_reservation_desktop.png",
+              "r5-captures/04_step05_arrival_desktop.png",
+              "r5-captures/05_step08_member_desktop.png",
+              "r5-captures/06_step09_staff_desktop.png",
+              "r5-captures/07_step10_owner_desktop.png",
+              "r5-captures/08_guide_center_mobile_390.png",
+              "r5-captures/09_tutorial_step01_mobile_390.png",
+              ".github/workflows/stay-r5-quick.pdf.b64",
+              ".github/workflows/stay-r5-detailed.pdf.b64",
+              ".github/workflows/stay-r5-pdf-root-fix.yml",
+          }
+          changed = set()
+          for line in subprocess.check_output(["git","status","--short"], text=True).splitlines():
+              changed.add(line[3:])
+          extra = changed - allowed
+          if extra:
+              raise SystemExit("Unexpected changed paths: " + repr(sorted(extra)))
+
+      - name: Commit forward-only R5 PDF fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Publish STAY R5 manuals and remove QA upload residue [skip ci]"
+          git push origin HEAD:main
