@@ -1,8 +1,9 @@
 (()=>{
 'use strict';
+// STAY-R4-GUIDE-CENTER
 // STAY-R3-FIX01-CLOSE-DRAG-GUARD
 const STORAGE_KEY='DPRO_TUTORIAL_STAY_V1_1';
-const VERSION='STAY-TUTORIAL-STANDARD-V1.1-R3';
+const VERSION='STAY-TUTORIAL-STANDARD-V1.1-R4';
 const STEPS=[
 {id:'STAY-F10-01',route:'demo-guide.html',selectors:['#heroTitle','.hero h1','section.hero'],title:'公開操作デモの全体像',copy:'まずSTAYの公開デモ全体と、確認する画面の構成を把握します。',safe:'見出し表示のみ。フォーム送信・認証・データ更新は行いません。',resumeKey:'stay:first10:01'},
 {id:'STAY-F10-02',route:'demo-guide.html',selectors:['#screenGrid','#flowGrid','.grid'],title:'画面構成と役割を確認',copy:'宿泊者・スタッフ・オーナーの各画面がどう分かれているか確認します。',safe:'案内カードの表示のみ。リンクの自動クリックやデモ初期化は行いません。',resumeKey:'stay:first10:02'},
@@ -19,7 +20,7 @@ let memState=null, currentTarget=null, drag=null, renderToken=0;
 const $=id=>document.getElementById(id);
 const clamp=(v,min,max)=>Math.min(Math.max(v,min),Math.max(min,max));
 function readState(){
-  try{const raw=localStorage.getItem(STORAGE_KEY);if(raw){const s=JSON.parse(raw);if(s&&s.version===VERSION)return s;}}catch{}
+  try{const raw=localStorage.getItem(STORAGE_KEY);if(raw){const s=JSON.parse(raw);if(s&&(s.version===VERSION||s.version==='STAY-TUTORIAL-STANDARD-V1.1-R3'))return {...s,version:VERSION};}}catch{}
   return memState||{version:VERSION,step:0,active:false,resumable:false,completed:false,resumeKey:null};
 }
 function writeState(patch){const next={...readState(),...patch,version:VERSION,updatedAt:new Date().toISOString()};memState=next;try{localStorage.setItem(STORAGE_KEY,JSON.stringify(next));}catch{}refreshLauncher();return next;}
@@ -28,22 +29,27 @@ function routeParts(route){const i=route.indexOf('#');return{page:i>=0?route.sli
 function samePage(route){return routeParts(route).page===pageName();}
 function ensureUi(){
   if($('dproTutCard'))return;
-  const launcher=document.createElement('div');launcher.id='dproTutLauncher';launcher.innerHTML=`<button class="dpro-tut-launch" id="dproTutLaunch" type="button" aria-expanded="false">操作チュートリアル</button><div class="dpro-tut-mini" aria-label="チュートリアル操作"><button id="dproTutStart" type="button">開始</button><button id="dproTutResume" type="button" hidden>再開</button><button id="dproTutReplay" type="button">もう一度</button></div>`;
+  const launcher=document.createElement('div');launcher.id='dproTutLauncher';launcher.innerHTML=`<button class="dpro-tut-launch" id="dproTutLaunch" type="button" aria-expanded="false">ガイドセンター</button>`;
+  const guide=document.createElement('div');guide.id='dproGuideCenter';guide.hidden=true;guide.innerHTML=`<section class="dpro-guide-panel" role="dialog" aria-modal="true" aria-labelledby="dproGuideTitle"><div class="dpro-guide-head"><div><p>DPRO STAY / GUIDE CENTER</p><h2 id="dproGuideTitle">操作ガイド</h2><span id="dproGuideProgress"></span></div><button id="dproGuideClose" type="button" aria-label="閉じる">×</button></div><div class="dpro-guide-controls"><button id="dproGuideStart" type="button">開始</button><button id="dproGuideResume" type="button" hidden>再開</button><button id="dproGuideReplay" type="button">もう一度</button></div><div class="dpro-guide-list" id="dproGuideList"></div></section>`;
   const shade=document.createElement('div');shade.id='dproTutShade';shade.hidden=true;
   const hi=document.createElement('div');hi.id='dproTutHighlight';hi.hidden=true;
   const card=document.createElement('section');card.id='dproTutCard';card.hidden=true;card.setAttribute('role','dialog');card.setAttribute('aria-label','DPRO操作チュートリアル');card.innerHTML=`<div class="dpro-tut-handle" id="dproTutDrag" aria-label="チュートリアルカードを移動"><span>⋮⋮ ドラッグで移動</span><strong id="dproTutCounter">1 / 10</strong><button class="dpro-tut-close" id="dproTutClose" type="button" aria-label="閉じる">×</button></div><div class="dpro-tut-body"><p class="dpro-tut-step" id="dproTutStepId"></p><h2 class="dpro-tut-title" id="dproTutTitle" tabindex="-1"></h2><p class="dpro-tut-copy" id="dproTutCopy"></p><div class="dpro-tut-safe" id="dproTutSafe"></div><div class="dpro-tut-fallback" id="dproTutFallback" hidden></div><div class="dpro-tut-progress"><span id="dproTutProgress"></span></div><div class="dpro-tut-actions"><button class="dpro-tut-back" id="dproTutBack" type="button">戻る</button><button class="dpro-tut-skip" id="dproTutSkip" type="button">スキップ</button><button class="dpro-tut-next" id="dproTutNext" type="button">次へ</button></div></div>`;
-  document.body.append(launcher,shade,hi,card);
-  $('dproTutLaunch').addEventListener('click',()=>{const open=launcher.dataset.open==='1';launcher.dataset.open=open?'0':'1';$('dproTutLaunch').setAttribute('aria-expanded',open?'false':'true');});
-  $('dproTutStart').addEventListener('click',()=>start(false));$('dproTutResume').addEventListener('click',resume);$('dproTutReplay').addEventListener('click',()=>start(true));
+  document.body.append(launcher,guide,shade,hi,card);
+  $('dproTutLaunch').addEventListener('click',openGuide);$('dproGuideClose').addEventListener('click',closeGuide);$('dproGuideCenter').addEventListener('click',e=>{if(e.target===$('dproGuideCenter'))closeGuide();});
+  $('dproGuideStart').addEventListener('click',()=>start(false));$('dproGuideResume').addEventListener('click',resume);$('dproGuideReplay').addEventListener('click',()=>start(true));
   $('dproTutClose').addEventListener('click',pause);$('dproTutSkip').addEventListener('click',skip);$('dproTutBack').addEventListener('click',back);$('dproTutNext').addEventListener('click',next);
   const handle=$('dproTutDrag');handle.addEventListener('pointerdown',beginDrag);handle.addEventListener('pointermove',moveDrag);handle.addEventListener('pointerup',endDrag);handle.addEventListener('pointercancel',endDrag);
   window.addEventListener('resize',()=>{clampCard();positionHighlight();});window.addEventListener('scroll',positionHighlight,{passive:true});
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!card.hidden){e.preventDefault();pause();}});
-  refreshLauncher();
+  document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('dproGuideCenter').hidden){e.preventDefault();closeGuide();return;}if(!card.hidden){e.preventDefault();pause();}});
+  renderGuide();refreshLauncher();
 }
-function refreshLauncher(){if(!$('dproTutLauncher'))return;const s=readState();$('dproTutResume').hidden=!(s.resumable&&!s.completed);}
-function start(replay){writeState({step:0,active:true,resumable:true,completed:false,resumeKey:STEPS[0].resumeKey,replayed:Boolean(replay)});$('dproTutLauncher').dataset.open='0';goToStep(0,true);}
-function resume(){const s=readState();const idx=clamp(Number(s.step)||0,0,STEPS.length-1);writeState({active:true,resumable:true,resumeKey:STEPS[idx].resumeKey});$('dproTutLauncher').dataset.open='0';goToStep(idx,true);}
+function openGuide(){hideTutorial();renderGuide();$('dproGuideCenter').hidden=false;$('dproTutLaunch').setAttribute('aria-expanded','true');$('dproGuideClose').focus();}
+function closeGuide(){$('dproGuideCenter').hidden=true;$('dproTutLaunch').setAttribute('aria-expanded','false');$('dproTutLaunch').focus();}
+function renderGuide(){if(!$('dproGuideList'))return;const s=readState(),current=clamp(Number(s.step)||0,0,STEPS.length-1);$('dproGuideProgress').textContent=s.completed?'完了済み':s.resumable?`進行中：${current+1} / ${STEPS.length}`:'未開始';$('dproGuideList').innerHTML=STEPS.map((step,i)=>`<article class="dpro-guide-item${!s.completed&&s.resumable&&i===current?' is-current':''}"><span>${String(i+1).padStart(2,'0')}</span><div><strong>${escapeGuide(step.title)}</strong><small>${escapeGuide(step.id)} / ${escapeGuide(step.route)}</small><p>${escapeGuide(step.copy)}</p></div></article>`).join('');}
+function escapeGuide(v){return String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#039;');}
+function refreshLauncher(){if(!$('dproTutLauncher'))return;const s=readState();if($('dproGuideResume'))$('dproGuideResume').hidden=!(s.resumable&&!s.completed);renderGuide();}
+function start(replay){writeState({step:0,active:true,resumable:true,completed:false,resumeKey:STEPS[0].resumeKey,replayed:Boolean(replay)});if($('dproGuideCenter'))$('dproGuideCenter').hidden=true;if($('dproTutLaunch'))$('dproTutLaunch').setAttribute('aria-expanded','false');goToStep(0,true);}
+function resume(){const s=readState();const idx=clamp(Number(s.step)||0,0,STEPS.length-1);writeState({active:true,resumable:true,resumeKey:STEPS[idx].resumeKey});if($('dproGuideCenter'))$('dproGuideCenter').hidden=true;if($('dproTutLaunch'))$('dproTutLaunch').setAttribute('aria-expanded','false');goToStep(idx,true);}
 function replay(){start(true);}
 function pause(){const s=readState();writeState({active:false,resumable:!s.completed,resumeKey:STEPS[clamp(Number(s.step)||0,0,9)].resumeKey});hideTutorial();$('dproTutLaunch')?.focus();}
 function skip(){writeState({active:false,resumable:false,completed:true,step:STEPS.length-1,resumeKey:STEPS[STEPS.length-1].resumeKey,skipped:true});hideTutorial();$('dproTutLaunch')?.focus();}
@@ -56,11 +62,11 @@ function isOnCanvas(el){const r=el.getBoundingClientRect(),vw=document.documentE
 async function renderStep(index){ensureUi();const token=++renderToken,step=STEPS[index];const card=$('dproTutCard'),hi=$('dproTutHighlight'),shade=$('dproTutShade');card.hidden=false;shade.hidden=false;$('dproTutCounter').textContent=`${index+1} / ${STEPS.length}`;$('dproTutStepId').textContent=step.id;$('dproTutTitle').textContent=step.title;$('dproTutCopy').textContent=step.copy;$('dproTutSafe').textContent=step.safe;$('dproTutProgress').style.width=`${((index+1)/STEPS.length)*100}%`;$('dproTutBack').disabled=index===0;$('dproTutNext').textContent=index===STEPS.length-1?'完了':'次へ';const result=await resolveTarget(step,token);if(token!==renderToken)return;currentTarget=result?.el||null;const fb=$('dproTutFallback');if(result){hi.hidden=false;fb.hidden=!result.fallback;fb.textContent=result.fallback?`安全な代替対象で表示中：${result.selector}`:'';positionHighlight();}else{hi.hidden=true;fb.hidden=false;fb.textContent='対象が非表示または画面外のため、ページ全体を安全な案内対象として続行します。';currentTarget=null;}clampCard();card.classList.add('dpro-tut-focus-ring');setTimeout(()=>card.classList.remove('dpro-tut-focus-ring'),500);$('dproTutTitle').focus({preventScroll:true});}
 function positionHighlight(){const hi=$('dproTutHighlight');if(!hi||hi.hidden||!currentTarget||!currentTarget.isConnected)return;const r=currentTarget.getBoundingClientRect(),vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight,p=6;const left=clamp(r.left-p,4,vw-8),top=clamp(r.top-p,4,vh-8),right=clamp(r.right+p,8,vw-4),bottom=clamp(r.bottom+p,8,vh-4);hi.style.left=`${left}px`;hi.style.top=`${top}px`;hi.style.width=`${Math.max(8,right-left)}px`;hi.style.height=`${Math.max(8,bottom-top)}px`;}
 function hideTutorial(){renderToken++;currentTarget=null;if($('dproTutCard'))$('dproTutCard').hidden=true;if($('dproTutHighlight'))$('dproTutHighlight').hidden=true;if($('dproTutShade'))$('dproTutShade').hidden=true;}
-function beginDrag(e){if(e.target instanceof Element&&e.target.closest('button,a,input,select,textarea,[role="button"]'))return;if(e.button!==undefined&&e.button!==0)return;const card=$('dproTutCard');if(!card||card.hidden)return;const r=card.getBoundingClientRect();drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};card.style.left=`${r.left}px`;card.style.top=`${r.top}px`;card.style.right='auto';card.style.bottom='auto';try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}e.preventDefault();}
+function beginDrag(e){if(e.target instanceof Element&&e.target.closest('button,a,input,select,textarea,[role=\"button\"]'))return;if(e.button!==undefined&&e.button!==0)return;const card=$('dproTutCard');if(!card||card.hidden)return;const r=card.getBoundingClientRect();drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};card.style.left=`${r.left}px`;card.style.top=`${r.top}px`;card.style.right='auto';card.style.bottom='auto';try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}e.preventDefault();}
 function moveDrag(e){if(!drag||e.pointerId!==drag.id)return;const card=$('dproTutCard'),vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;const x=clamp(e.clientX-drag.dx,4,vw-card.offsetWidth-4),y=clamp(e.clientY-drag.dy,4,vh-card.offsetHeight-4);card.style.left=`${x}px`;card.style.top=`${y}px`;e.preventDefault();}
 function endDrag(e){if(!drag||e.pointerId!==drag.id)return;try{e.currentTarget.releasePointerCapture(e.pointerId);}catch{}drag=null;clampCard();}
 function clampCard(){const card=$('dproTutCard');if(!card||card.hidden)return;const r=card.getBoundingClientRect(),vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;let left=r.left,top=r.top;if(r.right>vw-4)left=vw-r.width-4;if(r.bottom>vh-4)top=vh-r.height-4;if(left<4)left=4;if(top<4)top=4;if(card.style.left||card.style.top){card.style.left=`${Math.max(4,left)}px`;card.style.top=`${Math.max(4,top)}px`;card.style.right='auto';card.style.bottom='auto';}}
 function boot(){ensureUi();const s=readState();if(s.active&&!s.completed){const idx=clamp(Number(s.step)||0,0,STEPS.length-1),step=STEPS[idx];if(samePage(step.route))renderStep(idx);}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.DPROStayTutorial={version:VERSION,steps:STEPS.map(x=>({...x})),start:()=>start(false),resume,replay,state:()=>({...readState()}),debug:()=>({targetSelector:currentTarget?.id?`#${currentTarget.id}`:currentTarget?.tagName||null,cardHidden:$('dproTutCard')?.hidden})};
+window.DPROStayTutorial={version:VERSION,steps:STEPS.map(x=>({...x})),guideCount:STEPS.length,start:()=>start(false),resume,replay,openGuide,state:()=>({...readState()}),debug:()=>({targetSelector:currentTarget?.id?`#${currentTarget.id}`:currentTarget?.tagName||null,cardHidden:$('dproTutCard')?.hidden,guideHidden:$('dproGuideCenter')?.hidden})};
 })();
