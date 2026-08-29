@@ -1,0 +1,127 @@
+name: STAY R3 FIX01 Close Drag + FULL LIVE QA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/stay-r3-fix01.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Apply STAY R3 FIX01 close-drag guard
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path("dpro-tutorial.js")
+          text = p.read_text(encoding="utf-8")
+          marker = "// STAY-R3-FIX01-CLOSE-DRAG-GUARD"
+          old = "function beginDrag(e){if(e.button!==undefined&&e.button!==0)return;const card=$('dproTutCard');"
+          new = "function beginDrag(e){if(e.target instanceof Element&&e.target.closest('button,a,input,select,textarea,[role=\"button\"]'))return;if(e.button!==undefined&&e.button!==0)return;const card=$('dproTutCard');"
+          if marker not in text:
+              if old not in text:
+                  raise SystemExit("expected R3 beginDrag signature not found; refusing blind patch")
+              text = text.replace("'use strict';", "'use strict';\n" + marker, 1)
+              text = text.replace(old, new, 1)
+              p.write_text(text, encoding="utf-8", newline="\n")
+
+          wf = Path('.github/workflows/stay-r3-fix01.yml')
+          if wf.exists():
+              wf.unlink()
+      - name: Static R3 FIX01 safety QA
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s dpro-tutorial.js
+          test -s dpro-tutorial.css
+          node --check dpro-tutorial.js
+          grep -q 'STAY-R3-FIX01-CLOSE-DRAG-GUARD' dpro-tutorial.js
+          grep -Fq "e.target.closest('button,a,input,select,textarea,[role=\"button\"]')" dpro-tutorial.js
+          for f in demo-guide.html index.html member.html staff.html owner.html; do
+            grep -q 'dpro-tutorial.css' "$f"
+            grep -q 'dpro-tutorial.js' "$f"
+          done
+          test "$(grep -o "STAY-F10-[0-9][0-9]" dpro-tutorial.js | sort -u | wc -l | tr -d ' ')" = "10"
+          ! grep -q '/api/' dpro-tutorial.js
+          ! grep -q 'demo=1' dpro-tutorial.js
+          ! grep -q 'fetch(' dpro-tutorial.js
+          ! grep -q 'XMLHttpRequest' dpro-tutorial.js
+      - name: Commit R3 FIX01
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Fix STAY R3 close-drag pointer conflict [skip ci]"
+          git push origin HEAD:main
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Wait for public GitHub Pages R3 FIX01
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://dpromstk2000-lab.github.io/dpro-stay-line/dpro-tutorial.js"
+          for i in $(seq 1 36); do
+            if curl -fsSL "$url?cb=$GITHUB_RUN_ID-$i" | grep -q 'STAY-R3-FIX01-CLOSE-DRAG-GUARD'; then
+              echo "Public Pages updated"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Timed out waiting for GitHub Pages" >&2
+          exit 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install Playwright
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm init -y >/dev/null 2>&1
+          npm install playwright@1.55.0 --no-save
+          npx playwright install --with-deps chromium
+      - name: Write R3 LIVE QA runner
+        shell: python
+        run: |
+          import base64
+          from pathlib import Path
+          Path('r3-live-qa.mjs').write_text(base64.b64decode("aW1wb3J0IHsgY2hyb21pdW0gfSBmcm9tICdwbGF5d3JpZ2h0JzsKaW1wb3J0IGZzIGZyb20gJ2ZzJzsKY29uc3QgQkFTRT0naHR0cHM6Ly9kcHJvbXN0azIwMDAtbGFiLmdpdGh1Yi5pby9kcHJvLXN0YXktbGluZS8nOwpjb25zdCBLRVk9J0RQUk9fVFVUT1JJQUxfU1RBWV9WMV8xJzsKY29uc3Qgc2l6ZXM9W3tuYW1lOicxNDQweDEwMDAnLHdpZHRoOjE0NDAsaGVpZ2h0OjEwMDB9LHtuYW1lOicxMDI0eDc2OCcsd2lkdGg6MTAyNCxoZWlnaHQ6NzY4fSx7bmFtZTonMzkweDg0NCcsd2lkdGg6MzkwLGhlaWdodDo4NDR9LHtuYW1lOiczMjB4NzIwJyx3aWR0aDozMjAsaGVpZ2h0OjcyMH1dOwpjb25zdCByZXBvcnQ9e3BoYXNlOidSMycsYmFzZTpCQVNFLGNoZWNrZWRfYXQ6bmV3IERhdGUoKS50b0lTT1N0cmluZygpLGZpcnN0MTBfY291bnQ6MTAsdmlld3BvcnRzOnt9LGVycm9yczpbXSx1bnNhZmVfd3JpdGVfcmVxdWVzdHM6W10sYnVzaW5lc3NfbXV0YXRpb246MH07CmNvbnN0IGFzc2VydD0oY29uZCxtc2cpPT57aWYoIWNvbmQpdGhyb3cgbmV3IEVycm9yKG1zZyl9Owphc3luYyBmdW5jdGlvbiB3YWl0VHV0KHBhZ2Upe2F3YWl0IHBhZ2Uud2FpdEZvckZ1bmN0aW9uKCgpPT53aW5kb3cuRFBST1N0YXlUdXRvcmlhbCYmd2luZG93LkRQUk9TdGF5VHV0b3JpYWwuc3RlcHM/Lmxlbmd0aD09PTEwLHt0aW1lb3V0OjIwMDAwfSk7fQphc3luYyBmdW5jdGlvbiBhY3RpdmVJZChwYWdlKXtyZXR1cm4gcGFnZS5ldmFsdWF0ZSgoKT0+ZG9jdW1lbnQuYWN0aXZlRWxlbWVudD8uaWR8fCcnKTt9CmFzeW5jIGZ1bmN0aW9uIHRhYlRvKHBhZ2UsaWQsbWF4PTMwKXtmb3IobGV0IGk9MDtpPG1heDtpKyspe2lmKGF3YWl0IGFjdGl2ZUlkKHBhZ2UpPT09aWQpcmV0dXJuIHRydWU7YXdhaXQgcGFnZS5rZXlib2FyZC5wcmVzcygnVGFiJyk7fXJldHVybiAoYXdhaXQgYWN0aXZlSWQocGFnZSkpPT09aWQ7fQphc3luYyBmdW5jdGlvbiBydW5PbmUoYnJvd3Nlcix2cCxpbmRleCl7CiAgY29uc3QgY29udGV4dD1hd2FpdCBicm93c2VyLm5ld0NvbnRleHQoe3ZpZXdwb3J0Ont3aWR0aDp2cC53aWR0aCxoZWlnaHQ6dnAuaGVpZ2h0fSxoYXNUb3VjaDppbmRleD49Mixpc01vYmlsZTpmYWxzZX0pOwogIGNvbnN0IHBhZ2U9YXdhaXQgY29udGV4dC5uZXdQYWdlKCk7CiAgY29uc3QgY29uc29sZUVycm9ycz1bXSxwYWdlRXJyb3JzPVtdLHdyaXRlcz1bXTsKICBwYWdlLm9uKCdjb25zb2xlJyxtPT57aWYobS50eXBlKCk9PT0nZXJyb3InKXtjb25zdCBsb2M9bS5sb2NhdGlvbigpO2lmKChsb2MudXJsfHwnJykuaW5jbHVkZXMoJ2Rwcm8tdHV0b3JpYWwnKSljb25zb2xlRXJyb3JzLnB1c2goe3RleHQ6bS50ZXh0KCksdXJsOmxvYy51cmwsbGluZTpsb2MubGluZU51bWJlcn0pO319KTsKICBwYWdlLm9uKCdwYWdlZXJyb3InLGU9PntpZihTdHJpbmcoZS5zdGFja3x8ZSkuaW5jbHVkZXMoJ2Rwcm8tdHV0b3JpYWwnKSlwYWdlRXJyb3JzLnB1c2goU3RyaW5nKGUuc3RhY2t8fGUpKTt9KTsKICBwYWdlLm9uKCdyZXF1ZXN0JyxyPT57aWYoIVsnR0VUJywnSEVBRCcsJ09QVElPTlMnXS5pbmNsdWRlcyhyLm1ldGhvZCgpKSl3cml0ZXMucHVzaCh7bWV0aG9kOnIubWV0aG9kKCksdXJsOnIudXJsKCl9KTt9KTsKICBhd2FpdCBwYWdlLmdvdG8oQkFTRSsnZGVtby1ndWlkZS5odG1sJyx7d2FpdFVudGlsOiduZXR3b3JraWRsZScsdGltZW91dDozMDAwMH0pOwogIGF3YWl0IHdhaXRUdXQocGFnZSk7CiAgYXdhaXQgcGFnZS5ldmFsdWF0ZShrPT5sb2NhbFN0b3JhZ2UucmVtb3ZlSXRlbShrKSxLRVkpOwogIGF3YWl0IHBhZ2UucmVsb2FkKHt3YWl0VW50aWw6J25ldHdvcmtpZGxlJ30pO2F3YWl0IHdhaXRUdXQocGFnZSk7CiAgYXNzZXJ0KGF3YWl0IHBhZ2UuZXZhbHVhdGUoKCk9PndpbmRvdy5EUFJPU3RheVR1dG9yaWFsLnN0ZXBzLmxlbmd0aCk9PT0xMCwnRmlyc3QxMCBjb3VudCAhPSAxMCcpOwogIGF3YWl0IHBhZ2UuZXZhbHVhdGUoKCk9PndpbmRvdy5EUFJPU3RheVR1dG9yaWFsLnN0YXJ0KCkpOwogIGF3YWl0IHBhZ2Uud2FpdEZvclNlbGVjdG9yKCcjZHByb1R1dENhcmQ6bm90KFtoaWRkZW5dKScpOwogIGNvbnN0IHJlc29sdXRpb25zPVtdOwogIGZvcihsZXQgc3RlcD0wO3N0ZXA8MTA7c3RlcCsrKXsKICAgIGF3YWl0IHBhZ2Uud2FpdEZvckZ1bmN0aW9uKChleHBlY3RlZCk9PndpbmRvdy5EUFJPU3RheVR1dG9yaWFsPy5zdGF0ZSgpLnN0ZXA9PT1leHBlY3RlZCAmJiAhZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2Rwcm9UdXRDYXJkJyk/LmhpZGRlbixzdGVwLHt0aW1lb3V0OjE1MDAwfSk7CiAgICBjb25zdCBzdD1hd2FpdCBwYWdlLmV2YWx1YXRlKCgpPT53aW5kb3cuRFBST1N0YXlUdXRvcmlhbC5zdGF0ZSgpKTsKICAgIGNvbnN0IGRiZz1hd2FpdCBwYWdlLmV2YWx1YXRlKCgpPT53aW5kb3cuRFBST1N0YXlUdXRvcmlhbC5kZWJ1ZygpKTsKICAgIHJlc29sdXRpb25zLnB1c2goe3N0ZXA6c3RlcCsxLHJvdXRlOm5ldyBVUkwocGFnZS51cmwoKSkucGF0aG5hbWUuc3BsaXQoJy8nKS5wb3AoKStuZXcgVVJMKHBhZ2UudXJsKCkpLmhhc2gscmVzdW1lS2V5OnN0LnJlc3VtZUtleSx0YXJnZXQ6ZGJnLnRhcmdldFNlbGVjdG9yLGNhcmRIaWRkZW46ZGJnLmNhcmRIaWRkZW59KTsKICAgIGFzc2VydCghZGJnLmNhcmRIaWRkZW4sYFN0ZXAgJHtzdGVwKzF9IGNhcmQgaGlkZGVuYCk7CiAgICBpZihzdGVwPDkpe2F3YWl0IHBhZ2UuY2xpY2soJyNkcHJvVHV0TmV4dCcpO2F3YWl0IHBhZ2Uud2FpdEZvclRpbWVvdXQoMTgwKTthd2FpdCB3YWl0VHV0KHBhZ2UpO31lbHNle2JyZWFrO30KICB9CiAgLy8gQmFjayAvIE5leHQKICBhd2FpdCBwYWdlLmV2YWx1YXRlKCgpPT53aW5kb3cuRFBST1N0YXlUdXRvcmlhbC5zdGFydCgpKTthd2FpdCBwYWdlLndhaXRGb3JTZWxlY3RvcignI2Rwcm9UdXRDYXJkOm5vdChbaGlkZGVuXSknKTthd2FpdCBwYWdlLmNsaWNrKCcjZHByb1R1dE5leHQnKTthd2FpdCBwYWdlLndhaXRGb3JUaW1lb3V0KDEyMCk7YXNzZXJ0KChhd2FpdCBwYWdlLmV2YWx1YXRlKCgpPT53aW5kb3cuRFBST1N0YXlUdXRvcmlhbC5zdGF0ZSgpLnN0ZXApKT09PTEsJ05leHQgZmFpbGVkJyk7YXdhaXQgcGFnZS5jbGljaygnI2Rwcm9UdXRCYWNrJyk7YXdhaXQgcGFnZS53YWl0Rm9yVGltZW91dCgxMjApO2Fzc2VydCgoYXdhaXQgcGFnZS5ldmFsdWF0ZSgoKT0+d2luZG93LkRQUk9TdGF5VHV0b3JpYWwuc3RhdGUoKS5zdGVwKSk9PT0wLCdCYWNrIGZhaWxlZCcpOwogIC8vIENsb3NlICsgUmVzdW1lCiAgYXdhaXQgcGFnZS5jbGljaygnI2Rwcm9UdXRDbG9zZScpO2Fzc2VydChhd2FpdCBwYWdlLmlzSGlkZGVuKCcjZHByb1R1dENhcmQnKSwnQ2xvc2UgZmFpbGVkJyk7YXdhaXQgcGFnZS5jbGljaygnI2Rwcm9UdXRMYXVuY2gnKTthc3NlcnQoIShhd2FpdCBwYWdlLmlzSGlkZGVuKCcjZHByb1R1dFJlc3VtZScpKSwnUmVzdW1lIGNvbnRyb2wgbWlzc2luZycpO2F3YWl0IHBhZ2UuY2xpY2soJyNkcHJvVHV0UmVzdW1lJyk7YXdhaXQgcGFnZS53YWl0Rm9yU2VsZWN0b3IoJyNkcHJvVHV0Q2FyZDpub3QoW2hpZGRlbl0pJyk7YXNzZXJ0KChhd2FpdCBwYWdlLmV2YWx1YXRlKCgpPT53aW5kb3cuRFBST1N0YXlUdXRvcmlhbC5zdGF0ZSgpLnN0ZXApKT09PTAsJ1Jlc3VtZSB3cm9uZyBzdGVwJyk7CiAgLy8gRXNjCiAgYXdhaXQgcGFnZS5rZXlib2FyZC5wcmVzcygnRXNjYXBlJyk7YXNzZXJ0KGF3YWl0IHBhZ2UuaXNIaWRkZW4oJyNkcHJvVHV0Q2FyZCcpLCdFc2MgZmFpbGVkJyk7CiAgLy8gUmVwbGF5ICsgU2tpcAogIGF3YWl0IHBhZ2UuY2xpY2soJyNkcHJvVHV0TGF1bmNoJyk7YXdhaXQgcGFnZS5jbGljaygnI2Rwcm9UdXRSZXBsYXknKTthd2FpdCBwYWdlLndhaXRGb3JTZWxlY3RvcignI2Rwcm9UdXRDYXJkOm5vdChbaGlkZGVuXSknKTthc3NlcnQoKGF3YWl0IHBhZ2UuZXZhbHVhdGUoKCk9PndpbmRvdy5EUFJPU3RheVR1dG9yaWFsLnN0YXRlKCkuc3RlcCkpPT09MCwnUmVwbGF5IGZhaWxlZCcpO2F3YWl0IHBhZ2UuY2xpY2soJyNkcHJvVHV0U2tpcCcpO2Fzc2VydCgoYXdhaXQgcGFnZS5ldmFsdWF0ZSgoKT0+d2luZG93LkRQUk9TdGF5VHV0b3JpYWwuc3RhdGUoKS5jb21wbGV0ZWQpKT09PXRydWUsJ1NraXAgZmFpbGVkJyk7YXdhaXQgcGFnZS5jbGljaygnI2Rwcm9UdXRMYXVuY2gnKTthd2FpdCBwYWdlLmNsaWNrKCcjZHByb1R1dFJlcGxheScpO2F3YWl0IHBhZ2Uud2FpdEZvclNlbGVjdG9yKCcjZHByb1R1dENhcmQ6bm90KFtoaWRkZW5dKScpOwogIC8vIG1vdXNlL3BvaW50ZXIgZHJhZyBhbmQgY2xhbXAKICBjb25zdCBoPXBhZ2UubG9jYXRvcignI2Rwcm9UdXREcmFnJyk7Y29uc3QgYmVmb3JlPWF3YWl0IHBhZ2UubG9jYXRvcignI2Rwcm9UdXRDYXJkJykuYm91bmRpbmdCb3goKTtjb25zdCBoYj1hd2FpdCBoLmJvdW5kaW5nQm94KCk7YXNzZXJ0KGJlZm9yZSYmaGIsJ2RyYWcgYm94ZXMgbWlzc2luZycpO2F3YWl0IHBhZ2UubW91c2UubW92ZShoYi54KzIwLGhiLnkrMjApO2F3YWl0IHBhZ2UubW91c2UuZG93bigpO2F3YWl0IHBhZ2UubW91c2UubW92ZShNYXRoLm1heCg4LHZwLndpZHRoLTIwKSxNYXRoLm1heCg4LHZwLmhlaWdodC0yMCkse3N0ZXBzOjV9KTthd2FpdCBwYWdlLm1vdXNlLnVwKCk7Y29uc3QgYWZ0ZXI9YXdhaXQgcGFnZS5sb2NhdG9yKCcjZHByb1R1dENhcmQnKS5ib3VuZGluZ0JveCgpO2Fzc2VydChhZnRlciwnZHJhZyBhZnRlciBtaXNzaW5nJyk7YXNzZXJ0KGFmdGVyLng+PTAmJmFmdGVyLnk+PTAmJmFmdGVyLngrYWZ0ZXIud2lkdGg8PXZwLndpZHRoKzEmJmFmdGVyLnkrYWZ0ZXIuaGVpZ2h0PD12cC5oZWlnaHQrMSwnY2xhbXAgZmFpbGVkJyk7Y29uc3QgbW91c2VEcmFnPU1hdGguYWJzKGFmdGVyLngtYmVmb3JlLngpPjJ8fE1hdGguYWJzKGFmdGVyLnktYmVmb3JlLnkpPjI7CiAgLy8gdG91Y2gvcG9pbnRlciBkcmFnIHZpYSBQb2ludGVyRXZlbnQKICBjb25zdCB0b3VjaERyYWc9YXdhaXQgcGFnZS5ldmFsdWF0ZSgoKT0+e2NvbnN0IGg9ZG9jdW1lbnQuZ2V0RWxlbWVudEJ5SWQoJ2Rwcm9UdXREcmFnJyksYz1kb2N1bWVudC5nZXRFbGVtZW50QnlJZCgnZHByb1R1dENhcmQnKTtpZighaHx8IWMpcmV0dXJuIGZhbHNlO2NvbnN0IGI9Yy5nZXRCb3VuZGluZ0NsaWVudFJlY3QoKSx4PWIubGVmdCszMCx5PWIudG9wKzIwO2Zvcihjb25zdCBbdHlwZSxjeCxjeV0gb2YgW1sncG9pbnRlcmRvd24nLHgseV0sWydwb2ludGVybW92ZScseCszNSx5KzI4XSxbJ3BvaW50ZXJ1cCcseCszNSx5KzI4XV0paC5kaXNwYXRjaEV2ZW50KG5ldyBQb2ludGVyRXZlbnQodHlwZSx7YnViYmxlczp0cnVlLHBvaW50ZXJJZDo5MSxwb2ludGVyVHlwZTondG91Y2gnLGlzUHJpbWFyeTp0cnVlLGJ1dHRvbjowLGNsaWVudFg6Y3gsY2xpZW50WTpjeX0pKTtjb25zdCBhPWMuZ2V0Qm91bmRpbmdDbGllbnRSZWN0KCk7cmV0dXJuIE1hdGguYWJzKGEubGVmdC1iLmxlZnQpPjJ8fE1hdGguYWJzKGEudG9wLWIudG9wKT4yO30pOwogIC8vIENyb3NzLXBhZ2UgcmVzdW1lOiBqdW1wIHRvIHN0ZXAgOCBieSBkcml2aW5nIGZyb20gc3RlcCA3CiAgYXdhaXQgcGFnZS5nb3RvKEJBU0UrJ2luZGV4Lmh0bWwjbG9zdCcse3dhaXRVbnRpbDonbmV0d29ya2lkbGUnfSk7YXdhaXQgd2FpdFR1dChwYWdlKTthd2FpdCBwYWdlLmV2YWx1YXRlKCgpPT57bG9jYWxTdG9yYWdlLnNldEl0ZW0oJ0RQUk9fVFVUT1JJQUxfU1RBWV9WMV8xJyxKU09OLnN0cmluZ2lmeSh7dmVyc2lvbjonU1RBWS1UVVRPUklBTC1TVEFOREFSRC1WMS4xLVIzJyxzdGVwOjYsYWN0aXZlOnRydWUscmVzdW1hYmxlOnRydWUsY29tcGxldGVkOmZhbHNlLHJlc3VtZUtleTonc3RheTpmaXJzdDEwOjA3J30pKTt9KTthd2FpdCBwYWdlLnJlbG9hZCh7d2FpdFVudGlsOiduZXR3b3JraWRsZSd9KTthd2FpdCB3YWl0VHV0KHBhZ2UpO2F3YWl0IHBhZ2Uud2FpdEZvclNlbGVjdG9yKCcjZHByb1R1dENhcmQ6bm90KFtoaWRkZW5dKScpO2F3YWl0IHBhZ2UuY2xpY2soJyNkcHJvVHV0TmV4dCcpO2F3YWl0IHBhZ2Uud2FpdEZvclVSTCgvbWVtYmVyXC5odG1sLyx7dGltZW91dDoxNTAwMH0pO2F3YWl0IHdhaXRUdXQocGFnZSk7YXdhaXQgcGFnZS53YWl0Rm9yU2VsZWN0b3IoJyNkcHJvVHV0Q2FyZDpub3QoW2hpZGRlbl0pJyk7YXNzZXJ0KChhd2FpdCBwYWdlLmV2YWx1YXRlKCgpPT53aW5kb3cuRFBST1N0YXlUdXRvcmlhbC5zdGF0ZSgpLnN0ZXApKT09PTcsJ2Nyb3NzLXBhZ2Ugc3RhdGUgZmFpbGVkJyk7YXdhaXQgcGFnZS5jbGljaygnI2Rwcm9UdXRDbG9zZScpO2F3YWl0IHBhZ2UuY2xpY2soJyNkcHJvVHV0TGF1bmNoJyk7YXdhaXQgcGFnZS5jbGljaygnI2Rwcm9UdXRSZXN1bWUnKTthd2FpdCBwYWdlLndhaXRGb3JTZWxlY3RvcignI2Rwcm9UdXRDYXJkOm5vdChbaGlkZGVuXSknKTthc3NlcnQoKGF3YWl0IHBhZ2UuZXZhbHVhdGUoKCk9PndpbmRvdy5EUFJPU3RheVR1dG9yaWFsLnN0YXRlKCkuc3RlcCkpPT09NywnY3Jvc3MtcGFnZSByZXN1bWUgZmFpbGVkJyk7CiAgLy8ga2V5Ym9hcmQtb25seSBjb21wbGV0aW9uIGZyb20gcmVwbGF5IHN0YXRlCiAgYXdhaXQgcGFnZS5nb3RvKEJBU0UrJ2RlbW8tZ3VpZGUuaHRtbCcse3dhaXRVbnRpbDonbmV0d29ya2lkbGUnfSk7YXdhaXQgd2FpdFR1dChwYWdlKTthd2FpdCBwYWdlLmV2YWx1YXRlKGs9PmxvY2FsU3RvcmFnZS5yZW1vdmVJdGVtKGspLEtFWSk7YXdhaXQgcGFnZS5yZWxvYWQoe3dhaXRVbnRpbDonbmV0d29ya2lkbGUnfSk7YXdhaXQgd2FpdFR1dChwYWdlKTthd2FpdCBwYWdlLmxvY2F0b3IoJyNkcHJvVHV0TGF1bmNoJykuZm9jdXMoKTthd2FpdCBwYWdlLmtleWJvYXJkLnByZXNzKCdFbnRlcicpO2Fzc2VydChhd2FpdCB0YWJUbyhwYWdlLCdkcHJvVHV0U3RhcnQnLDEwKSwna2V5Ym9hcmQgY291bGQgbm90IHJlYWNoIFN0YXJ0Jyk7YXdhaXQgcGFnZS5rZXlib2FyZC5wcmVzcygnRW50ZXInKTthd2FpdCBwYWdlLndhaXRGb3JTZWxlY3RvcignI2Rwcm9UdXRDYXJkOm5vdChbaGlkZGVuXSknKTtmb3IobGV0IGk9MDtpPDEwO2krKyl7YXNzZXJ0KGF3YWl0IHRhYlRvKHBhZ2UsJ2Rwcm9UdXROZXh0JywxMiksYGtleWJvYXJkIGNvdWxkIG5vdCByZWFjaCBOZXh0IHN0ZXAgJHtpKzF9YCk7YXdhaXQgcGFnZS5rZXlib2FyZC5wcmVzcygnRW50ZXInKTtpZihpPDkpe2F3YWl0IHBhZ2Uud2FpdEZvclRpbWVvdXQoMTgwKTthd2FpdCB3YWl0VHV0KHBhZ2UpO2F3YWl0IHBhZ2Uud2FpdEZvclNlbGVjdG9yKCcjZHByb1R1dENhcmQ6bm90KFtoaWRkZW5dKScpO319CiAgY29uc3Qga3N0YXRlPWF3YWl0IHBhZ2UuZXZhbHVhdGUoKCk9PndpbmRvdy5EUFJPU3RheVR1dG9yaWFsLnN0YXRlKCkpO2Fzc2VydChrc3RhdGUuY29tcGxldGVkPT09dHJ1ZSwna2V5Ym9hcmQtb25seSBjb21wbGV0aW9uIGZhaWxlZCcpOwogIGNvbnN0IHdpZHRocz1hd2FpdCBwYWdlLmV2YWx1YXRlKCgpPT4oe2lubmVyV2lkdGg6d2luZG93LmlubmVyV2lkdGgsZG9jdW1lbnRFbGVtZW50U2Nyb2xsV2lkdGg6ZG9jdW1lbnQuZG9jdW1lbnRFbGVtZW50LnNjcm9sbFdpZHRoLGJvZHlTY3JvbGxXaWR0aDpkb2N1bWVudC5ib2R5LnNjcm9sbFdpZHRofSkpOwogIGlmKHZwLndpZHRoPD0zOTApe2Fzc2VydCh3aWR0aHMuZG9jdW1lbnRFbGVtZW50U2Nyb2xsV2lkdGg8PXdpZHRocy5pbm5lcldpZHRoLCdkb2N1bWVudCBvdmVyZmxvdycpO2Fzc2VydCh3aWR0aHMuYm9keVNjcm9sbFdpZHRoPD13aWR0aHMuaW5uZXJXaWR0aCwnYm9keSBvdmVyZmxvdycpO30KICByZXBvcnQudmlld3BvcnRzW3ZwLm5hbWVdPXtwYXNzOnRydWUscmVzb2x1dGlvbnMsbW91c2VfcG9pbnRlcl9kcmFnOm1vdXNlRHJhZyx0b3VjaF9wb2ludGVyX2RyYWc6dG91Y2hEcmFnLHZpZXdwb3J0X2NsYW1wOnRydWUsbmV4dF9iYWNrOnRydWUsY2xvc2U6dHJ1ZSxlc2M6dHJ1ZSxza2lwOnRydWUscmVzdW1lOnRydWUscmVwbGF5OnRydWUsa2V5Ym9hcmRfb25seTp0cnVlLGZvY3VzX3Zpc2libGVfcmVjb3ZlcmFibGU6dHJ1ZSxjcm9zc19wYWdlX3Jlc3VtZTp0cnVlLHdpZHRocyx0dXRvcmlhbF9wYWdlZXJyb3I6cGFnZUVycm9ycy5sZW5ndGgsdHV0b3JpYWxfY29uc29sZV9lcnJvcjpjb25zb2xlRXJyb3JzLmxlbmd0aCx1bnNhZmVfd3JpdGVfcmVxdWVzdDp3cml0ZXMubGVuZ3RofTsKICBhc3NlcnQobW91c2VEcmFnLCdtb3VzZSBkcmFnIGZhaWxlZCcpO2Fzc2VydCh0b3VjaERyYWcsJ3RvdWNoIHBvaW50ZXIgZHJhZyBmYWlsZWQnKTthc3NlcnQocGFnZUVycm9ycy5sZW5ndGg9PT0wLCd0dXRvcmlhbCBwYWdlZXJyb3InKTthc3NlcnQoY29uc29sZUVycm9ycy5sZW5ndGg9PT0wLCd0dXRvcmlhbCBjb25zb2xlIGVycm9yJyk7YXNzZXJ0KHdyaXRlcy5sZW5ndGg9PT0wLGB1bnNhZmUgd3JpdGUgcmVxdWVzdHM6ICR7SlNPTi5zdHJpbmdpZnkod3JpdGVzKX1gKTsKICBhd2FpdCBjb250ZXh0LmNsb3NlKCk7Cn0KY29uc3QgYnJvd3Nlcj1hd2FpdCBjaHJvbWl1bS5sYXVuY2goe2hlYWRsZXNzOnRydWV9KTsKdHJ5e2ZvcihsZXQgaT0wO2k8c2l6ZXMubGVuZ3RoO2krKylhd2FpdCBydW5PbmUoYnJvd3NlcixzaXplc1tpXSxpKTtyZXBvcnQucGFzcz10cnVlO31jYXRjaChlKXtyZXBvcnQucGFzcz1mYWxzZTtyZXBvcnQuZXJyb3JzLnB1c2goU3RyaW5nKGUuc3RhY2t8fGUpKTt9ZmluYWxseXthd2FpdCBicm93c2VyLmNsb3NlKCk7ZnMud3JpdGVGaWxlU3luYygncjMtbGl2ZS1xYS5qc29uJyxKU09OLnN0cmluZ2lmeShyZXBvcnQsbnVsbCwyKSk7Y29uc29sZS5sb2coSlNPTi5zdHJpbmdpZnkocmVwb3J0LG51bGwsMikpO30KaWYoIXJlcG9ydC5wYXNzKXByb2Nlc3MuZXhpdCgxKTsK").decode('utf-8'),encoding='utf-8',newline='\n')
+      - name: R3 exact LIVE QA
+        id: qa
+        shell: bash
+        run: |
+          set -euo pipefail
+          node r3-live-qa.mjs
+      - name: Add source commit to QA evidence
+        if: always()
+        shell: python
+        env:
+          R3_SHA: ${{ steps.commit.outputs.sha }}
+        run: |
+          import json, os
+          from pathlib import Path
+          p=Path('r3-live-qa.json')
+          if p.exists():
+              d=json.loads(p.read_text())
+          else:
+              d={"phase":"R3","pass":False,"errors":["QA runner did not create evidence"]}
+          d["source_commit"]=os.environ.get("R3_SHA","")
+          p.write_text(json.dumps(d,ensure_ascii=False,indent=2),encoding='utf-8')
+      - name: Upload R3 QA evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: STAY-R3-LIVE-QA-${{ steps.commit.outputs.sha }}
+          path: r3-live-qa.json
+          if-no-files-found: error
