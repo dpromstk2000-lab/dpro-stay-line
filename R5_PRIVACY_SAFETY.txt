@@ -1,6 +1,0 @@
-PII / customer / guest / reservation sensitive REAL records: 0
-Secrets / credentials: 0
-Screenshots: current public observational capture only
-Unsafe write requests during capture: 0
-Business mutation: 0
-demo=1 routes: not used
