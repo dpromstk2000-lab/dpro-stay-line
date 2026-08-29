@@ -1,4 +1,4 @@
-name: STAY R4 Guide Center Apply + FULL LIVE QA V1.1
+name: STAY R4 Guide Center Apply + FULL LIVE QA V1.2
 
 on:
   workflow_dispatch:
@@ -397,7 +397,13 @@ jobs:
           node --check dpro-tutorial.js
           grep -q 'STAY-R4-GUIDE-CENTER' dpro-tutorial.js
           grep -q 'STAY-R3-FIX01-CLOSE-DRAG-GUARD' dpro-tutorial.js
-          grep -Fq "e.target.closest('button,a,input,select,textarea,[role=\"button\"]')" dpro-tutorial.js
+          python - <<'PY'
+          from pathlib import Path
+          text=Path("dpro-tutorial.js").read_text(encoding="utf-8")
+          assert "function beginDrag(e){" in text
+          assert "e.target instanceof Element&&e.target.closest('button,a,input,select,textarea," in text
+          assert "return;if(e.button!==undefined&&e.button!==0)return;" in text
+          PY
           grep -q 'guideCount:STEPS.length' dpro-tutorial.js
           test "$(grep -o 'STAY-F10-[0-9][0-9]' dpro-tutorial.js | sort -u | wc -l | tr -d ' ')" = "10"
           for f in demo-guide.html index.html member.html staff.html owner.html; do
