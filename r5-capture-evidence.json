@@ -1,0 +1,107 @@
+{
+  "phase": "R5_CAPTURE",
+  "source": "PUBLIC_GITHUB_PAGES",
+  "base": "https://dpromstk2000-lab.github.io/dpro-stay-line/",
+  "checked_at": "2026-08-29T06:50:04.148Z",
+  "r4_marker": true,
+  "first10_count": 10,
+  "guide_count": 10,
+  "screenshots": [
+    {
+      "name": "01_guide_center_desktop",
+      "file": "r5-captures/01_guide_center_desktop.png",
+      "url": "https://dpromstk2000-lab.github.io/dpro-stay-line/demo-guide.html",
+      "width": 1440,
+      "height": 1000,
+      "docScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "DPRO 宿泊施設 LINE｜公開操作デモ・画面一覧"
+    },
+    {
+      "name": "02_tutorial_step01_desktop",
+      "file": "r5-captures/02_tutorial_step01_desktop.png",
+      "url": "https://dpromstk2000-lab.github.io/dpro-stay-line/demo-guide.html",
+      "width": 1440,
+      "height": 1000,
+      "docScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "DPRO 宿泊施設 LINE｜公開操作デモ・画面一覧"
+    },
+    {
+      "name": "03_step04_reservation_desktop",
+      "file": "r5-captures/03_step04_reservation_desktop.png",
+      "url": "https://dpromstk2000-lab.github.io/dpro-stay-line/index.html#reservation",
+      "width": 1440,
+      "height": 1000,
+      "docScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "DPROステイ｜宿泊者サポート"
+    },
+    {
+      "name": "04_step05_arrival_desktop",
+      "file": "r5-captures/04_step05_arrival_desktop.png",
+      "url": "https://dpromstk2000-lab.github.io/dpro-stay-line/index.html#arrival",
+      "width": 1440,
+      "height": 1000,
+      "docScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "DPROステイ｜宿泊者サポート"
+    },
+    {
+      "name": "05_step08_member_desktop",
+      "file": "r5-captures/05_step08_member_desktop.png",
+      "url": "https://dpromstk2000-lab.github.io/dpro-stay-line/member.html",
+      "width": 1440,
+      "height": 1000,
+      "docScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "DPROステイ｜宿泊者マイページ STEP STAY-11"
+    },
+    {
+      "name": "06_step09_staff_desktop",
+      "file": "r5-captures/06_step09_staff_desktop.png",
+      "url": "https://dpromstk2000-lab.github.io/dpro-stay-line/staff.html",
+      "width": 1440,
+      "height": 1000,
+      "docScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "DPROステイ｜スタッフ業務 STEP STAY-11"
+    },
+    {
+      "name": "07_step10_owner_desktop",
+      "file": "r5-captures/07_step10_owner_desktop.png",
+      "url": "https://dpromstk2000-lab.github.io/dpro-stay-line/owner.html",
+      "width": 1440,
+      "height": 1000,
+      "docScrollWidth": 1440,
+      "bodyScrollWidth": 1440,
+      "title": "DPROステイ｜施設管理 STEP STAY-11"
+    },
+    {
+      "name": "08_guide_center_mobile_390",
+      "file": "r5-captures/08_guide_center_mobile_390.png",
+      "url": "https://dpromstk2000-lab.github.io/dpro-stay-line/demo-guide.html",
+      "width": 390,
+      "height": 844,
+      "docScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "title": "DPRO 宿泊施設 LINE｜公開操作デモ・画面一覧"
+    },
+    {
+      "name": "09_tutorial_step01_mobile_390",
+      "file": "r5-captures/09_tutorial_step01_mobile_390.png",
+      "url": "https://dpromstk2000-lab.github.io/dpro-stay-line/demo-guide.html",
+      "width": 390,
+      "height": 844,
+      "docScrollWidth": 390,
+      "bodyScrollWidth": 390,
+      "title": "DPRO 宿泊施設 LINE｜公開操作デモ・画面一覧"
+    }
+  ],
+  "unsafe_write_requests": [],
+  "business_mutation": 0,
+  "errors": [],
+  "pass": true,
+  "repo_head_at_capture": "cec8eab062caec8fb7a1b389bcdfc242d18249a1",
+  "app_source_commit": "42ab1fe5d0dd724a2238f872c70faf2291ae9edc"
+}
