@@ -1,0 +1,96 @@
+name: "DPRO SHOP Fix 11 STAY"
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - ".github/workflows/dpro-shop-fix-11-stay.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: "dpro-shop-fix-11-stay"
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify audited source SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          check() {
+            path="$1"; expected="$2"
+            test -f "$path" || { echo "Missing target: $path"; exit 31; }
+            got="$(git hash-object "$path")"
+            echo "$path  $got"
+            test "$got" = "$expected" || { echo "SOURCE SHA MISMATCH: $path expected=$expected got=$got"; exit 32; }
+          }
+          check 'owner.html' '5ff7e8544b270653e61dd50b6d9c592e68c96564'
+
+      - name: Apply narrow confirmed fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, sys
+          
+          def read(path):
+              return Path(path).read_text(encoding="utf-8")
+          
+          def write(path, text):
+              Path(path).write_text(text, encoding="utf-8")
+          
+          def replace_once(text, old, new, label):
+              n=text.count(old)
+              if n != 1:
+                  raise SystemExit(f"{label}: expected 1 exact match, found {n}")
+              return text.replace(old,new,1)
+          
+          def sub_once(text, pattern, repl, label, flags=0):
+              new,n=re.subn(pattern,repl,text,count=1,flags=flags)
+              if n != 1:
+                  raise SystemExit(f"{label}: expected 1 regex match, found {n}")
+              return new
+          
+          p='owner.html'; t=read(p)
+          t=replace_once(t,
+          '''async function changeRes(id,statusText,message){try{''',
+          '''async function changeRes(id,statusText,message){if(['checked_in','checked_out'].includes(statusText)&&!confirm(statusText==='checked_in'?'この予約をチェックイン済みにしますか？':'この予約をチェックアウト済みにしますか？'))return;try{''','STAY changeRes guard')
+          # reservation edit: insert before loading button after payload constructed/validated.
+          needle='''if(!p.arrival_time){delete p.arrival_date;delete p.arrival_time;if(edit)p.planned_arrival_at=null}let b=$("saveRes");'''
+          repl='''if(!p.arrival_time){delete p.arrival_date;delete p.arrival_time;if(edit)p.planned_arrival_at=null}if(edit&&p.reservation_status!==x.reservation_status&&['checked_in','checked_out','cancelled','no_show'].includes(p.reservation_status)&&!confirm(`予約状態を「${p.reservation_status}」へ変更しますか？`))return;let b=$("saveRes");'''
+          t=replace_once(t,needle,repl,'STAY edit modal guard')
+          write(p,t)
+          PY
+
+      - name: Validate source diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git diff --stat
+          git diff -- "owner.html"
+          if git diff --quiet -- "owner.html"; then
+            echo "No source change was produced."
+            exit 41
+          fi
+
+      - name: Commit fix to main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "owner.html"
+          git diff --cached --check
+          git commit -m "Fix STAY reservation terminal guards"
+          git push origin HEAD:main
