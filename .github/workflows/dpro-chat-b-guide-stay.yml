@@ -26,43 +26,149 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Add Owner return path to STAY Guide Center
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          guide = Path("demo-guide.html")
+          runtime = Path("dpro-tutorial.js")
+
+          if not guide.exists():
+              raise SystemExit("demo-guide.html not found")
+          if not runtime.exists():
+              raise SystemExit("dpro-tutorial.js not found")
+
+          rs = runtime.read_text(encoding="utf-8")
+          for token in [
+              "STAY-R4-GUIDE-CENTER",
+              "dproGuideStart",
+              "dproGuideResume",
+              "dproGuideReplay",
+              "function openGuide()",
+          ]:
+              if token not in rs:
+                  raise SystemExit(f"STAY tutorial runtime requirement missing: {token}")
+
+          s = guide.read_text(encoding="utf-8")
+          before = s
+
+          if "data-dpro-chat-b-owner-return" not in s:
+              insert = """
+          <div data-dpro-chat-b-owner-return hidden style="position:fixed;right:12px;bottom:12px;z-index:10001">
+            <a href="owner.html" style="display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 13px;border:1px solid rgba(0,0,0,.12);border-radius:999px;background:#fff;color:#174f46;text-decoration:none;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.12)">Owner PCへ戻る</a>
+          </div>
+          <script>
+          (()=>{'use strict';
+            const fromOwner=new URLSearchParams(location.search).get('from')==='owner';
+            const node=document.querySelector('[data-dpro-chat-b-owner-return]');
+            if(node) node.hidden=!fromOwner;
+          })();
+          </script>
+          """
+              if "</body>" not in s:
+                  raise SystemExit("demo-guide.html body close marker missing")
+              s = s.replace("</body>", insert + "</body>", 1)
+
+          for token in [
+              "data-dpro-chat-b-owner-return",
+              'href="owner.html"',
+              "Owner PCへ戻る",
+              "new URLSearchParams(location.search).get('from')==='owner'",
+          ]:
+              if token not in s:
+                  raise SystemExit(f"STAY owner return result missing: {token}")
+
+          if s != before:
+              guide.write_text(s, encoding="utf-8")
+
+          print("STAY DEMO GUIDE OWNER RETURN:", "CHANGED" if s != before else "ALREADY_OK")
+          PY
+
       - name: Add restrained owner guide entry
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-          p=Path('owner.html')
-          if not p.exists(): raise SystemExit('owner.html not found')
-          guide=Path('guide-center.html')
+
+          owner = Path("owner.html")
+          guide = Path("demo-guide.html")
+          runtime = Path("dpro-tutorial.js")
+
+          if not owner.exists():
+              raise SystemExit("owner.html not found")
           if not guide.exists():
-              raise SystemExit('guide-center.html not found. Do not fall back silently; role-correct Guide Center is required.')
-          gs=guide.read_text(encoding='utf-8')
-          if 'owner.html' not in gs:
-              raise SystemExit('guide-center.html has no Owner PC return path')
-          if not any(token in gs.lower() for token in ['tutorial','replay','restart','resume']):
-              raise SystemExit('guide-center.html has no Tutorial Resume/Replay path')
-          s=p.read_text(encoding='utf-8'); before=s
-          if 'data-dpro-chat-b-guide' not in s:
-              style="""\n<style id="dpro-chat-b-guide-style">\n.dpro-chat-b-guide-link{position:fixed;right:12px;bottom:12px;z-index:9999;display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 13px;border:1px solid rgba(0,0,0,.12);border-radius:999px;background:#fff;color:#17352c;text-decoration:none;font:800 13px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.12)}\n.dpro-chat-b-guide-link:focus-visible{outline:3px solid #ffbf47;outline-offset:3px}\n@media(max-width:700px){.dpro-chat-b-guide-link{bottom:72px;right:10px;min-height:40px;padding:7px 11px;font-size:12px}}\n</style>\n"""
-              link="""\n<a class="dpro-chat-b-guide-link" data-dpro-chat-b-guide href="guide-center.html" aria-label="操作ガイドを開く">操作ガイド</a>\n"""
-              if '</head>' not in s or '</body>' not in s: raise SystemExit('safe HTML insertion markers missing')
-              s=s.replace('</head>',style+'</head>',1)
-              s=s.replace('</body>',link+'</body>',1)
-              p.write_text(s,encoding='utf-8')
-          out=p.read_text(encoding='utf-8')
-          if out.count('data-dpro-chat-b-guide') != 1: raise SystemExit('guide entry count is not exactly 1')
-          if 'href="guide-center.html"' not in out: raise SystemExit('guide href missing')
-          print('OWNER GUIDE PATCH:', 'CHANGED' if out!=before else 'ALREADY_OK')
+              raise SystemExit("demo-guide.html not found")
+          if not runtime.exists():
+              raise SystemExit("dpro-tutorial.js not found")
+
+          gs = guide.read_text(encoding="utf-8")
+          rs = runtime.read_text(encoding="utf-8")
+
+          for token in [
+              "data-dpro-chat-b-owner-return",
+              'href="owner.html"',
+              "Owner PCへ戻る",
+          ]:
+              if token not in gs:
+                  raise SystemExit(f"STAY demo guide requirement missing: {token}")
+
+          for token in [
+              "dproGuideStart",
+              "dproGuideResume",
+              "dproGuideReplay",
+          ]:
+              if token not in rs:
+                  raise SystemExit(f"STAY runtime guide control missing: {token}")
+
+          s = owner.read_text(encoding="utf-8")
+          before = s
+
+          # Normalize any prior CHAT B guide link to the actual STAY Guide Center.
+          s = s.replace('href="guide-center.html"', 'href="demo-guide.html?from=owner"')
+          s = s.replace('href="guide-center.html?from=owner"', 'href="demo-guide.html?from=owner"')
+          s = s.replace('href="demo-guide.html"', 'href="demo-guide.html?from=owner"')
+
+          if "data-dpro-chat-b-guide" not in s:
+              style = """
+          <style id="dpro-chat-b-guide-style">
+          .dpro-chat-b-guide-link{position:fixed;right:12px;bottom:12px;z-index:9999;display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 13px;border:1px solid rgba(0,0,0,.12);border-radius:999px;background:#fff;color:#174f46;text-decoration:none;font:800 13px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.12)}
+          .dpro-chat-b-guide-link:focus-visible{outline:3px solid #c98a3d;outline-offset:3px}
+          @media(max-width:700px){.dpro-chat-b-guide-link{bottom:72px;right:10px;min-height:40px;padding:7px 11px;font-size:12px}}
+          </style>
+          """
+              link = """
+          <a class="dpro-chat-b-guide-link" data-dpro-chat-b-guide href="demo-guide.html?from=owner" aria-label="操作ガイドを開く">操作ガイド</a>
+          """
+              if "</head>" not in s or "</body>" not in s:
+                  raise SystemExit("safe HTML insertion markers missing")
+              s = s.replace("</head>", style + "</head>", 1)
+              s = s.replace("</body>", link + "</body>", 1)
+
+          if s.count("data-dpro-chat-b-guide") != 1:
+              raise SystemExit("guide entry count is not exactly 1")
+          if 'href="demo-guide.html?from=owner"' not in s:
+              raise SystemExit("STAY owner-aware guide href missing")
+
+          if s != before:
+              owner.write_text(s, encoding="utf-8")
+
+          print("STAY OWNER GUIDE ENTRY:", "CHANGED" if s != before else "ALREADY_OK")
           PY
 
       - name: Static guide QA
         shell: bash
         run: |
           grep -q 'data-dpro-chat-b-guide' owner.html
-          grep -q 'href="guide-center.html"' owner.html
-          grep -q 'owner.html' guide-center.html
-          grep -Eqi 'tutorial|replay|restart|resume' guide-center.html
-          echo 'OWNER GUIDE static QA: PASS'
+          grep -q 'href="demo-guide.html?from=owner"' owner.html
+          grep -q 'data-dpro-chat-b-owner-return' demo-guide.html
+          grep -q 'Owner PCへ戻る' demo-guide.html
+          grep -q 'STAY-R4-GUIDE-CENTER' dpro-tutorial.js
+          grep -q 'dproGuideStart' dpro-tutorial.js
+          grep -q 'dproGuideResume' dpro-tutorial.js
+          grep -q 'dproGuideReplay' dpro-tutorial.js
+          echo 'STAY OWNER GUIDE static QA: PASS'
 
       - name: Commit forward-only fix
         shell: bash
@@ -70,10 +176,10 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git rm --ignore-unmatch ".github/workflows/dpro-chat-b-guide-stay.yml"
-          git add "owner.html"
+          git add "owner.html" "demo-guide.html"
           if git diff --cached --quiet; then
             echo "No changes to commit."
             exit 0
           fi
-          git commit -m "Add CHAT B owner 操作ガイド entry for STAY"
+          git commit -m "Fix CHAT B STAY owner guide entry"
           git push
