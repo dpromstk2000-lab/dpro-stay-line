@@ -50,7 +50,7 @@ a{color:inherit}.page{width:min(1140px,calc(100% - 24px));margin:0 auto;padding:
 <body>
 <main class="page">
 <section class="hero">
-  <div class="kicker">PUBLIC OPERATION DEMO / V1.0</div>
+  <div class="kicker">DPRO 宿泊施設 LINE / 公開操作デモ</div>
   <h1 id="heroTitle"></h1>
   <p id="heroCopy"></p>
   <div class="hero-actions">
@@ -64,7 +64,7 @@ a{color:inherit}.page{width:min(1140px,calc(100% - 24px));margin:0 auto;padding:
 <section class="demo-info" id="quickInfo" aria-label="デモ利用情報"></section>
 
 <div class="section-head">
-  <small>CHOOSE A SCREEN</small>
+  <small>画面を選ぶ</small>
   <h2>確認する画面を選択</h2>
   <p id="screenIntro"></p>
 </div>
@@ -72,7 +72,7 @@ a{color:inherit}.page{width:min(1140px,calc(100% - 24px));margin:0 auto;padding:
 <section class="grid" id="screenGrid"></section>
 
 <div class="section-head">
-  <small>RECOMMENDED JOURNEY</small>
+  <small>おすすめの確認順</small>
   <h2>おすすめの確認順</h2>
   <p id="journeyIntro"></p>
 </div>
@@ -101,21 +101,21 @@ const CONFIG = {
   "adminCode": "1234",
   "quickInfo": [
     {
-      "label": "GUEST FLOW",
+      "label": "宿泊者の流れ",
       "text": "予約確認・到着案内 → 滞在案内・問い合わせ"
     },
     {
-      "label": "DEMO INFO",
-      "text": "管理画面コード 1234 / 架空データのみ"
+      "label": "デモについて",
+      "text": "管理画面はデモ用の認証情報を自動設定 / 架空データのみ"
     },
     {
-      "label": "SCREEN STRUCTURE",
-      "text": "4画面で5ステップ（04–05は同じOWNER PC）"
+      "label": "画面構成",
+      "text": "4画面で5つの流れを確認（04–05は同じオーナーPC）"
     }
   ],
   "screens": [
     {
-      "step": "01 / GUEST / PRIMARY EXPERIENCE",
+      "step": "01 / 宿泊者 / はじめに",
       "title": "予約確認・到着案内",
       "description": "宿泊者が予約内容を確認し、チェックイン前の到着予定時間を連絡できる公開サポート画面です。",
       "tags": [
@@ -129,7 +129,7 @@ const CONFIG = {
       "officialUrl": "https://dpromstk2000-lab.github.io/dpro-line-systems-site/lp-stay.html"
     },
     {
-      "step": "02 / GUEST / MEMBER PAGE",
+      "step": "02 / 宿泊者 / マイページ",
       "title": "宿泊者マイページ・滞在案内",
       "description": "予約内容、到着予定、アクセス、駐車場、Wi-Fi、ハウスルールなど、予約後に必要な案内をまとめて確認します。",
       "tags": [
@@ -143,7 +143,7 @@ const CONFIG = {
       "officialUrl": "https://dpromstk2000-lab.github.io/dpro-line-systems-site/lp-stay.html"
     },
     {
-      "step": "03 / STAFF / FIELD OPERATIONS",
+      "step": "03 / スタッフ / 当日運営",
       "title": "清掃・問い合わせ・当日運営",
       "description": "スタッフが今日と未完了の清掃・点検、宿泊者問い合わせ、忘れ物対応を担当者単位で更新します。",
       "tags": [
@@ -151,13 +151,13 @@ const CONFIG = {
         "問い合わせ",
         "忘れ物"
       ],
-      "note": "管理コードは 1234。デモURLではコードを自動設定し、営業デモを初期化できます。",
+      "note": "デモURLではデモ用の認証情報を自動設定し、営業デモを初期化できます。",
       "url": "staff.html?demo=1",
       "cta": "スタッフ業務を開く",
       "officialUrl": "https://dpromstk2000-lab.github.io/dpro-line-systems-site/lp-stay.html"
     },
     {
-      "step": "04–05 / OWNER PC / SAME SCREEN",
+      "step": "04–05 / オーナーPC / 同じ画面",
       "title": "忘れ物対応・施設管理",
       "description": "オーナーPCで予約、宿泊者、清掃、問い合わせ、忘れ物、部屋・スタッフ・施設設定まで宿泊運営全体を管理します。",
       "tags": [
@@ -165,7 +165,7 @@ const CONFIG = {
         "予約・清掃",
         "施設設定"
       ],
-      "note": "管理コードは 1234。04の忘れ物対応と05の施設管理は同じOWNER PC内で確認します。",
+      "note": "04の忘れ物対応と05の施設管理は同じオーナーPC内で確認します。デモ用の認証情報は自動設定されます。",
       "url": "owner.html?demo=1&v=STAY-11",
       "cta": "施設管理を開く",
       "officialUrl": "https://dpromstk2000-lab.github.io/dpro-line-systems-site/lp-stay.html"
@@ -205,7 +205,7 @@ document.getElementById("primaryDemoLink").href = CONFIG.primaryDemoUrl;
 document.getElementById("notice").textContent = CONFIG.notice;
 document.getElementById("screenIntro").textContent = CONFIG.screenIntro;
 document.getElementById("journeyIntro").textContent = CONFIG.journeyIntro;
-document.getElementById("footer").textContent = `${CONFIG.systemName}｜PUBLIC OPERATION DEMO V1.0`;
+document.getElementById("footer").textContent = `${CONFIG.systemName}｜公開操作デモ`;
 
 document.getElementById("quickInfo").innerHTML = CONFIG.quickInfo.map(x =>
   `<div><small>${x.label}</small><strong>${x.text}</strong></div>`
@@ -227,7 +227,7 @@ document.getElementById("screenGrid").innerHTML = CONFIG.screens.map(x => `
 
 document.getElementById("flowGrid").innerHTML = CONFIG.journey.map(x => `
   <div class="flow-step${x.sameScreen ? " same" : ""}">
-    <b>${x.step}${x.sameScreen ? " / SAME SCREEN" : ""}</b>
+    <b>${x.step}${x.sameScreen ? " / 同じ画面" : ""}</b>
     <strong>${x.text}</strong>
   </div>
 `).join("");
@@ -235,7 +235,7 @@ document.getElementById("flowGrid").innerHTML = CONFIG.journey.map(x => `
 <script src="dpro-tutorial.js" data-dpro-tutorial="stay-v1-1"></script>
 
 <div data-dpro-chat-b-owner-return hidden style="position:fixed;right:12px;bottom:12px;z-index:10001">
-  <a href="owner.html" style="display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 13px;border:1px solid rgba(0,0,0,.12);border-radius:999px;background:#fff;color:#174f46;text-decoration:none;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.12)">Owner PCへ戻る</a>
+  <a href="owner.html" style="display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 13px;border:1px solid rgba(0,0,0,.12);border-radius:999px;background:#fff;color:#174f46;text-decoration:none;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.12)">オーナーPCへ戻る</a>
 </div>
 <script>
 (()=>{'use strict';
