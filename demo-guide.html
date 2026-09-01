@@ -233,5 +233,16 @@ document.getElementById("flowGrid").innerHTML = CONFIG.journey.map(x => `
 `).join("");
 </script>
 <script src="dpro-tutorial.js" data-dpro-tutorial="stay-v1-1"></script>
+
+<div data-dpro-chat-b-owner-return hidden style="position:fixed;right:12px;bottom:12px;z-index:10001">
+  <a href="owner.html" style="display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 13px;border:1px solid rgba(0,0,0,.12);border-radius:999px;background:#fff;color:#174f46;text-decoration:none;font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.12)">Owner PCへ戻る</a>
+</div>
+<script>
+(()=>{'use strict';
+  const fromOwner=new URLSearchParams(location.search).get('from')==='owner';
+  const node=document.querySelector('[data-dpro-chat-b-owner-return]');
+  if(node) node.hidden=!fromOwner;
+})();
+</script>
 </body>
 </html>
