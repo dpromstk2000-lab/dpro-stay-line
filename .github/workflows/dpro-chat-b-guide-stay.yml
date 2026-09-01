@@ -1,0 +1,79 @@
+name: DPRO CHAT B STAY Owner Guide Fix
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: dpro-chat-b-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repository guard
+        shell: bash
+        run: |
+          if [ "$GITHUB_REPOSITORY" != "dpromstk2000-lab/dpro-stay-line" ]; then
+            echo "Wrong repository: expected dpromstk2000-lab/dpro-stay-line, got $GITHUB_REPOSITORY" >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Add restrained owner guide entry
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('owner.html')
+          if not p.exists(): raise SystemExit('owner.html not found')
+          guide=Path('guide-center.html')
+          if not guide.exists():
+              raise SystemExit('guide-center.html not found. Do not fall back silently; role-correct Guide Center is required.')
+          gs=guide.read_text(encoding='utf-8')
+          if 'owner.html' not in gs:
+              raise SystemExit('guide-center.html has no Owner PC return path')
+          if not any(token in gs.lower() for token in ['tutorial','replay','restart','resume']):
+              raise SystemExit('guide-center.html has no Tutorial Resume/Replay path')
+          s=p.read_text(encoding='utf-8'); before=s
+          if 'data-dpro-chat-b-guide' not in s:
+              style="""\n<style id="dpro-chat-b-guide-style">\n.dpro-chat-b-guide-link{position:fixed;right:12px;bottom:12px;z-index:9999;display:inline-flex;align-items:center;justify-content:center;min-height:42px;padding:8px 13px;border:1px solid rgba(0,0,0,.12);border-radius:999px;background:#fff;color:#17352c;text-decoration:none;font:800 13px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif;box-shadow:0 8px 24px rgba(0,0,0,.12)}\n.dpro-chat-b-guide-link:focus-visible{outline:3px solid #ffbf47;outline-offset:3px}\n@media(max-width:700px){.dpro-chat-b-guide-link{bottom:72px;right:10px;min-height:40px;padding:7px 11px;font-size:12px}}\n</style>\n"""
+              link="""\n<a class="dpro-chat-b-guide-link" data-dpro-chat-b-guide href="guide-center.html" aria-label="操作ガイドを開く">操作ガイド</a>\n"""
+              if '</head>' not in s or '</body>' not in s: raise SystemExit('safe HTML insertion markers missing')
+              s=s.replace('</head>',style+'</head>',1)
+              s=s.replace('</body>',link+'</body>',1)
+              p.write_text(s,encoding='utf-8')
+          out=p.read_text(encoding='utf-8')
+          if out.count('data-dpro-chat-b-guide') != 1: raise SystemExit('guide entry count is not exactly 1')
+          if 'href="guide-center.html"' not in out: raise SystemExit('guide href missing')
+          print('OWNER GUIDE PATCH:', 'CHANGED' if out!=before else 'ALREADY_OK')
+          PY
+
+      - name: Static guide QA
+        shell: bash
+        run: |
+          grep -q 'data-dpro-chat-b-guide' owner.html
+          grep -q 'href="guide-center.html"' owner.html
+          grep -q 'owner.html' guide-center.html
+          grep -Eqi 'tutorial|replay|restart|resume' guide-center.html
+          echo 'OWNER GUIDE static QA: PASS'
+
+      - name: Commit forward-only fix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm --ignore-unmatch ".github/workflows/dpro-chat-b-guide-stay.yml"
+          git add "owner.html"
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+          git commit -m "Add CHAT B owner 操作ガイド entry for STAY"
+          git push
