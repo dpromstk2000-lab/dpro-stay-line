@@ -1,0 +1,1382 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#174f46">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="description" content="DPRO 宿泊・民泊 LINE 宿泊予約。施設の予約方式に合わせ、外部予約・DPRO予約申込・問い合わせへ安全に案内します。">
+  <title>DPROステイ｜宿泊予約</title>
+  <style>
+    :root {
+      --ink: #172421;
+      --muted: #5f6f6b;
+      --brand: #174f46;
+      --brand-strong: #0d3c35;
+      --brand-soft: #e9f4f1;
+      --accent: #c98a3d;
+      --accent-soft: #fff4e5;
+      --surface: #ffffff;
+      --surface-alt: #f4f7f6;
+      --line: #d5e0dd;
+      --danger: #ad3434;
+      --danger-soft: #fff0f0;
+      --success: #1d6d4d;
+      --success-soft: #eaf7f0;
+      --warning: #8a5b16;
+      --warning-soft: #fff7e8;
+      --shadow: 0 18px 48px rgba(14, 60, 52, 0.12);
+      --content: 920px;
+      --radius-lg: 22px;
+      --radius-md: 15px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 6% 0%, rgba(201, 138, 61, 0.13), transparent 30rem),
+        linear-gradient(180deg, #f7faf9 0%, #edf4f1 52%, #f8faf9 100%);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans JP", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: inherit; }
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    [hidden] { display: none !important; }
+
+    .skip-link {
+      position: fixed;
+      top: 8px;
+      left: 8px;
+      z-index: 999;
+      padding: 9px 13px;
+      border-radius: 8px;
+      color: #fff;
+      background: var(--brand-strong);
+      transform: translateY(-150%);
+    }
+    .skip-link:focus { transform: none; }
+
+    .shell {
+      width: min(calc(100% - 28px), var(--content));
+      margin: 0 auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      border-bottom: 1px solid rgba(207, 221, 216, .92);
+      background: rgba(250, 252, 251, .95);
+      backdrop-filter: blur(16px);
+    }
+    .header-inner {
+      min-height: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+    }
+    .brand-lockup {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      text-decoration: none;
+    }
+    .brand-mark {
+      width: 42px;
+      height: 42px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      color: #fff;
+      background: linear-gradient(145deg, var(--brand), var(--brand-strong));
+      box-shadow: 0 8px 18px rgba(23, 79, 70, .2);
+      font-weight: 900;
+    }
+    .brand-name {
+      max-width: 60vw;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 16px;
+      line-height: 1.25;
+      font-weight: 900;
+    }
+    .brand-sub {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 750;
+    }
+    .header-link {
+      flex: 0 0 auto;
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--brand-strong);
+      background: #fff;
+      font-size: 12px;
+      font-weight: 850;
+      text-decoration: none;
+    }
+
+    .hero { padding: 30px 0 18px; }
+    .hero-card {
+      position: relative;
+      overflow: hidden;
+      padding: clamp(28px, 5vw, 48px);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 27px;
+      color: #fff;
+      background:
+        linear-gradient(125deg, rgba(11,55,48,.98), rgba(31,103,89,.94)),
+        var(--brand);
+      box-shadow: var(--shadow);
+    }
+    .hero-card::before {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      top: -145px;
+      right: -75px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.09);
+    }
+    .eyebrow {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      margin-bottom: 12px;
+      padding: 7px 11px;
+      border: 1px solid rgba(255,255,255,.28);
+      border-radius: 999px;
+      background: rgba(255,255,255,.1);
+      font-size: 12px;
+      font-weight: 850;
+    }
+    .hero h1 {
+      position: relative;
+      z-index: 1;
+      margin: 0;
+      font-size: clamp(34px, 7vw, 52px);
+      line-height: 1.15;
+      letter-spacing: -.035em;
+    }
+    .hero-copy {
+      position: relative;
+      z-index: 1;
+      max-width: 700px;
+      margin: 15px 0 0;
+      color: rgba(255,255,255,.88);
+      font-size: clamp(15px, 2.3vw, 18px);
+      font-weight: 650;
+    }
+    .hero-points {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+    }
+    .hero-points span {
+      padding: 7px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .status-banner {
+      margin-top: 13px;
+      padding: 13px 15px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      color: var(--muted);
+      background: rgba(255,255,255,.88);
+      font-size: 13px;
+      font-weight: 750;
+    }
+    .status-banner[data-tone="success"] {
+      border-color: #b9dfcd;
+      color: var(--success);
+      background: var(--success-soft);
+    }
+    .status-banner[data-tone="error"] {
+      border-color: #efc2c2;
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    main { padding: 8px 0 72px; }
+
+    .mode-card,
+    .section-card {
+      margin-bottom: 18px;
+      padding: clamp(22px, 4vw, 32px);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      background: rgba(255,255,255,.96);
+      box-shadow: 0 10px 28px rgba(23,79,70,.07);
+    }
+    .mode-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .mode-icon {
+      width: 44px;
+      height: 44px;
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      color: var(--brand);
+      background: var(--brand-soft);
+      font-weight: 900;
+    }
+    .mode-card h2,
+    .section-card h2 {
+      margin: 0;
+      font-size: clamp(22px, 4vw, 28px);
+      line-height: 1.3;
+      letter-spacing: -.025em;
+    }
+    .mode-card p,
+    .section-desc {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .mode-detail {
+      margin-top: 12px;
+      padding: 11px 13px;
+      border-radius: 12px;
+      color: var(--warning);
+      background: var(--warning-soft);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    .section-kicker {
+      margin: 0 0 5px;
+      color: var(--brand);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: .09em;
+    }
+    .step-badge {
+      min-width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      color: var(--brand);
+      background: var(--brand-soft);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .field { min-width: 0; }
+    .field.full { grid-column: 1 / -1; }
+    label {
+      display: block;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 850;
+    }
+    label.required::after {
+      content: "必須";
+      margin-left: 7px;
+      padding: 2px 5px;
+      border-radius: 5px;
+      color: #fff;
+      background: var(--brand);
+      font-size: 9px;
+      vertical-align: 1px;
+    }
+    input, select, textarea {
+      width: 100%;
+      min-height: 52px;
+      border: 1px solid #cbd8d4;
+      border-radius: 11px;
+      padding: 12px 13px;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+      transition: border-color .18s ease, box-shadow .18s ease;
+    }
+    textarea {
+      min-height: 125px;
+      resize: vertical;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: #5d998d;
+      box-shadow: 0 0 0 4px rgba(23,79,70,.1);
+    }
+    input[readonly] { background: var(--surface-alt); }
+    .hint {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .check-line {
+      display: flex;
+      gap: 9px;
+      align-items: flex-start;
+      margin-top: 16px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+    .check-line input {
+      width: 19px;
+      height: 19px;
+      min-height: 19px;
+      flex: 0 0 auto;
+      margin: 1px 0 0;
+      padding: 0;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-top: 19px;
+    }
+    .btn {
+      min-height: 50px;
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 17px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-weight: 900;
+      text-decoration: none;
+      transition: transform .16s ease, opacity .16s ease;
+    }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); }
+    .btn:disabled { cursor: not-allowed; opacity: .56; }
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(140deg, var(--brand), var(--brand-strong));
+      box-shadow: 0 9px 20px rgba(23,79,70,.18);
+    }
+    .btn-secondary {
+      border: 1px solid #bfcfca;
+      color: var(--brand-strong);
+      background: #fff;
+    }
+    .btn-warm {
+      color: #fff;
+      background: linear-gradient(140deg, #b97728, var(--accent));
+    }
+    .btn-danger {
+      border: 1px solid #e1b6b6;
+      color: var(--danger);
+      background: #fff;
+    }
+
+    .info-box,
+    .message,
+    .result-card {
+      margin-top: 16px;
+      padding: 14px 15px;
+      border-radius: 13px;
+      font-size: 13px;
+    }
+    .info-box {
+      color: var(--warning);
+      background: var(--warning-soft);
+    }
+    .message {
+      white-space: pre-line;
+      color: var(--muted);
+      background: var(--surface-alt);
+    }
+    .message.success {
+      color: var(--success);
+      background: var(--success-soft);
+    }
+    .message.error {
+      color: var(--danger);
+      background: var(--danger-soft);
+    }
+
+    .result-card {
+      border: 1px solid #c8ded5;
+      background: #f5fbf8;
+    }
+    .result-card[data-tone="confirmed"] {
+      border-color: #a9d4bf;
+      background: var(--success-soft);
+    }
+    .result-card[data-tone="declined"],
+    .result-card[data-tone="cancelled"] {
+      border-color: #e4c0c0;
+      background: var(--danger-soft);
+    }
+    .result-status {
+      display: inline-flex;
+      padding: 5px 9px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--brand);
+      font-size: 11px;
+      font-weight: 900;
+    }
+    .result-card[data-tone="confirmed"] .result-status { background: var(--success); }
+    .result-card[data-tone="declined"] .result-status,
+    .result-card[data-tone="cancelled"] .result-status { background: var(--danger); }
+    .result-number {
+      margin: 11px 0 0;
+      font-size: clamp(17px, 4vw, 22px);
+      font-weight: 950;
+      word-break: break-all;
+    }
+    .result-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+      margin-top: 14px;
+    }
+    .result-item {
+      padding: 11px 12px;
+      border-radius: 11px;
+      background: rgba(255,255,255,.78);
+    }
+    .result-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 750;
+    }
+    .result-item strong {
+      display: block;
+      margin-top: 2px;
+      font-size: 13px;
+    }
+
+    .external-panel {
+      padding: 22px;
+      border: 1px solid #d9c8a9;
+      border-radius: 17px;
+      background: linear-gradient(145deg, #fffdf8, #fff7e9);
+    }
+    .external-panel h3 { margin: 0; font-size: 20px; }
+    .external-panel p { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
+
+    .privacy-note {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+      padding: 13px;
+      border-radius: 13px;
+      color: var(--muted);
+      background: var(--surface-alt);
+      font-size: 11px;
+    }
+    .privacy-note strong { color: var(--brand-strong); }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,.42);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    footer {
+      padding: 0 0 calc(28px + env(safe-area-inset-bottom));
+      color: var(--muted);
+      text-align: center;
+      font-size: 11px;
+    }
+    footer .version { margin-top: 3px; opacity: .78; }
+
+    @media (max-width: 680px) {
+      .shell { width: min(calc(100% - 18px), var(--content)); }
+      .header-link { display: none; }
+      .hero { padding-top: 18px; }
+      .hero-card { padding: 27px 21px; border-radius: 21px; }
+      .hero h1 { font-size: 34px; }
+      .form-grid { grid-template-columns: 1fr; }
+      .field.full { grid-column: auto; }
+      .section-card, .mode-card { padding: 21px 16px; border-radius: 19px; }
+      .button-row .btn { width: 100%; }
+      .result-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 390px) {
+      .result-grid { grid-template-columns: 1fr; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へ移動</a>
+
+  <header class="site-header">
+    <div class="shell header-inner">
+      <a class="brand-lockup" id="homeLink" href="index.html">
+        <div class="brand-mark" aria-hidden="true">D</div>
+        <div>
+          <div class="brand-name" id="headerFacilityName">DPROステイ</div>
+          <div class="brand-sub">宿泊予約</div>
+        </div>
+      </a>
+      <a class="header-link" id="supportLink" href="index.html#inquiry">施設へ問い合わせ</a>
+    </div>
+  </header>
+
+  <div class="shell">
+    <section class="hero" aria-labelledby="heroTitle">
+      <div class="hero-card">
+        <div class="eyebrow">DPRO STAY BOOKING</div>
+        <h1 id="heroTitle">宿泊予約</h1>
+        <p class="hero-copy">施設の予約方法に合わせて、外部予約サイト・DPRO予約申込・問い合わせへ安全にご案内します。</p>
+        <div class="hero-points">
+          <span>予約方式を自動判定</span>
+          <span>二重送信防止</span>
+          <span>申込状況を確認</span>
+          <span>決済情報は扱いません</span>
+        </div>
+      </div>
+      <div id="apiStatus" class="status-banner" role="status" aria-live="polite">予約受付設定を確認しています…</div>
+    </section>
+  </div>
+
+  <main id="main" class="shell">
+    <section class="mode-card" aria-labelledby="modeTitle">
+      <div class="mode-icon" aria-hidden="true">予</div>
+      <div>
+        <h2 id="modeTitle">予約受付方法を確認中</h2>
+        <p id="modeDescription">施設の設定を読み込んでいます。</p>
+        <div id="modeDetail" class="mode-detail" hidden></div>
+      </div>
+    </section>
+
+    <section id="externalSection" class="section-card" hidden aria-labelledby="externalTitle">
+      <div class="external-panel">
+        <h3 id="externalTitle">施設の予約ページをご利用ください</h3>
+        <p>この施設は、外部の予約ページで宿泊予約を受け付けています。DPRO側で空室確定は行いません。</p>
+        <div class="button-row">
+          <a id="externalBookingLink" class="btn btn-warm" href="#" target="_blank" rel="noopener noreferrer">予約ページを開く</a>
+          <a class="btn btn-secondary support-link-copy" href="index.html#inquiry">施設へ問い合わせ</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="inquirySection" class="section-card" hidden aria-labelledby="inquiryModeTitle">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">INQUIRY</p>
+          <h2 id="inquiryModeTitle">予約について施設へ相談</h2>
+          <p class="section-desc">この施設では、DPROからの予約確定は行わず、希望日・人数などを確認して施設からご案内します。</p>
+        </div>
+        <div class="step-badge" aria-hidden="true">01</div>
+      </div>
+      <div class="button-row">
+        <a class="btn btn-primary support-link-copy" href="index.html#inquiry">宿泊について問い合わせる</a>
+      </div>
+    </section>
+
+    <section id="requestSection" class="section-card" hidden aria-labelledby="requestTitle">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">BOOKING REQUEST</p>
+          <h2 id="requestTitle">宿泊予約を申し込む</h2>
+          <p class="section-desc">希望内容を送信後、施設が空室を確認して予約を確定します。</p>
+        </div>
+        <div class="step-badge" aria-hidden="true">01</div>
+      </div>
+
+      <div class="info-box">
+        <strong>この送信だけでは予約確定ではありません。</strong><br>
+        施設確認後に正式な予約番号が発行されます。外部予約サイトの在庫とDPROはリアルタイム同期していません。
+      </div>
+
+      <form id="bookingForm" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label class="required" for="checkinDate">チェックイン日</label>
+            <input id="checkinDate" name="checkin_date" type="date" required>
+            <div class="hint" id="checkinHint">予約受付期間を確認しています。</div>
+          </div>
+          <div class="field">
+            <label class="required" for="checkoutDate">チェックアウト日</label>
+            <input id="checkoutDate" name="checkout_date" type="date" required>
+            <div class="hint" id="nightsHint">1泊以上で選択してください。</div>
+          </div>
+
+          <div class="field">
+            <label class="required" for="adults">大人</label>
+            <select id="adults" name="adults" required></select>
+          </div>
+          <div class="field">
+            <label for="children">子ども</label>
+            <select id="children" name="children"></select>
+          </div>
+          <div class="field">
+            <label for="infants">幼児</label>
+            <select id="infants" name="infants"></select>
+          </div>
+          <div class="field" id="unitField">
+            <label for="requestedUnit">希望する部屋・棟</label>
+            <select id="requestedUnit" name="requested_unit_id">
+              <option value="">おまかせ</option>
+            </select>
+            <div class="hint">希望であり、予約確定時に施設が最終決定します。</div>
+          </div>
+
+          <div class="field">
+            <label class="required" for="guestName">代表者のお名前</label>
+            <input id="guestName" name="guest_name" type="text" maxlength="200" autocomplete="name" placeholder="例：山田 太郎" required>
+          </div>
+          <div class="field">
+            <label class="required" for="phone">電話番号</label>
+            <input id="phone" name="phone" type="tel" maxlength="50" inputmode="tel" autocomplete="tel" placeholder="例：090-1234-5678" required>
+            <div class="hint">申込状況の確認にも同じ電話番号を使用します。</div>
+          </div>
+          <div class="field full">
+            <label id="emailLabel" for="email">メールアドレス</label>
+            <input id="email" name="email" type="email" maxlength="320" autocomplete="email" placeholder="example@example.com">
+          </div>
+          <div class="field full">
+            <label for="specialRequests">ご要望・連絡事項</label>
+            <textarea id="specialRequests" name="special_requests" maxlength="2000" placeholder="到着予定、駐車場、子ども用備品など、ご要望があれば入力してください。"></textarea>
+          </div>
+        </div>
+
+        <label class="check-line">
+          <input id="bookingConsent" type="checkbox">
+          <span>入力した内容を予約申込の確認・施設からの連絡に使用することに同意します。</span>
+        </label>
+
+        <div class="button-row">
+          <button id="bookingSubmit" class="btn btn-primary" type="submit">予約を申し込む</button>
+        </div>
+        <div id="bookingMessage" aria-live="polite"></div>
+      </form>
+
+      <div id="bookingSuccess" class="result-card" hidden>
+        <span class="result-status">申込受付済み</span>
+        <div class="result-number" id="successRequestNumber">—</div>
+        <p class="section-desc">この番号は、施設が予約を確定するまでの「予約申込番号」です。</p>
+        <div class="result-grid">
+          <div class="result-item"><span>チェックイン</span><strong id="successCheckin">—</strong></div>
+          <div class="result-item"><span>チェックアウト</span><strong id="successCheckout">—</strong></div>
+          <div class="result-item"><span>現在の状態</span><strong>施設確認待ち</strong></div>
+          <div class="result-item"><span>正式予約</span><strong>まだ未確定</strong></div>
+        </div>
+        <div class="button-row">
+          <button id="copyRequestNumber" class="btn btn-secondary" type="button">申込番号をコピー</button>
+          <button id="jumpToStatus" class="btn btn-secondary" type="button">申込状況を確認</button>
+        </div>
+      </div>
+
+      <div class="privacy-note">
+        <div><strong>安全設計：</strong>カード番号・決済情報・鍵番号・本人確認書類はこの予約申込画面では扱いません。</div>
+      </div>
+    </section>
+
+    <section id="statusSection" class="section-card" aria-labelledby="statusTitle">
+      <div class="section-head">
+        <div>
+          <p class="section-kicker">REQUEST STATUS</p>
+          <h2 id="statusTitle">予約申込の状況を確認</h2>
+          <p class="section-desc">予約申込番号と申込時の電話番号を入力してください。</p>
+        </div>
+        <div class="step-badge" aria-hidden="true">02</div>
+      </div>
+
+      <form id="statusForm" novalidate>
+        <div class="form-grid">
+          <div class="field">
+            <label class="required" for="statusRequestNumber">予約申込番号</label>
+            <input id="statusRequestNumber" type="text" maxlength="100" autocomplete="off" placeholder="REQ-..." required>
+          </div>
+          <div class="field">
+            <label class="required" for="statusPhone">電話番号</label>
+            <input id="statusPhone" type="tel" maxlength="50" inputmode="tel" autocomplete="tel" required>
+          </div>
+        </div>
+        <div class="button-row">
+          <button id="statusSubmit" class="btn btn-secondary" type="submit">申込状況を確認する</button>
+        </div>
+        <div id="statusMessage" aria-live="polite"></div>
+      </form>
+
+      <div id="statusResult" class="result-card" hidden>
+        <span class="result-status" id="statusBadge">受付済み</span>
+        <div class="result-number" id="statusNumber">—</div>
+        <div class="result-grid">
+          <div class="result-item"><span>チェックイン</span><strong id="statusCheckin">—</strong></div>
+          <div class="result-item"><span>チェックアウト</span><strong id="statusCheckout">—</strong></div>
+          <div class="result-item"><span>宿泊人数</span><strong id="statusGuests">—</strong></div>
+          <div class="result-item"><span>正式予約番号</span><strong id="statusReservationNumber">未発行</strong></div>
+        </div>
+        <div id="statusGuidance" class="message"></div>
+        <div class="button-row">
+          <a id="reservationLookupLink" class="btn btn-primary" href="index.html#reservation" hidden>確定した予約を確認</a>
+          <button id="cancelRequestButton" class="btn btn-danger" type="button" hidden>予約申込を取り消す</button>
+          <a class="btn btn-secondary support-link-copy" href="index.html#inquiry">施設へ問い合わせ</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="shell">
+    <div id="footerFacilityName">DPROステイ</div>
+    <div class="version">DPRO 宿泊・民泊 LINE｜STAY-BRUSHUP-4</div>
+  </footer>
+
+  <script>
+    "use strict";
+
+    const DEFAULT_CONFIG = Object.freeze({
+      API_BASE: "https://dpro-stay-line-api.dpromstk2000.workers.dev",
+      FACILITY_CODE: "dpro_stay_demo",
+      VERSION: "STAY-BRUSHUP-4-GUEST-BOOKING-20260915",
+      SUPPORT_PAGE: "index.html",
+      RESERVATION_PAGE: "index.html"
+    });
+
+    const externalConfig = window.DPRO_STAY_CONFIG && typeof window.DPRO_STAY_CONFIG === "object"
+      ? window.DPRO_STAY_CONFIG
+      : {};
+
+    const query = new URLSearchParams(location.search);
+    const queryFacility = (query.get("facility_code") || "").trim();
+    const CONFIG = Object.freeze({
+      ...DEFAULT_CONFIG,
+      ...externalConfig,
+      FACILITY_CODE: queryFacility || externalConfig.FACILITY_CODE || DEFAULT_CONFIG.FACILITY_CODE
+    });
+
+    const state = {
+      facility: null,
+      facilitySettings: null,
+      bookingSettings: null,
+      units: [],
+      effectiveMode: "inquiry",
+      lastRequest: null,
+      currentStatus: null,
+      submitKey: null
+    };
+
+    const el = {};
+
+    document.addEventListener("DOMContentLoaded", init);
+
+    async function init() {
+      cacheElements();
+      bindEvents();
+      fillGuestCountOptions();
+      wireSupportLinks();
+      setApiStatus("予約受付設定を確認しています…", "neutral");
+
+      try {
+        const [bookingSettings, facilityData] = await Promise.all([
+          apiRequest(`/api/public/booking/settings?facility_code=${encodeURIComponent(CONFIG.FACILITY_CODE)}`),
+          apiRequest(`/api/public/facility?facility_code=${encodeURIComponent(CONFIG.FACILITY_CODE)}`)
+        ]);
+
+        state.bookingSettings = bookingSettings || {};
+        state.facility = facilityData.facility || null;
+        state.facilitySettings = facilityData.settings || {};
+        state.units = Array.isArray(facilityData.units) ? facilityData.units : [];
+
+        applyFacility();
+        configureDates();
+        configureUnitOptions();
+        applyBookingMode();
+        applyDemoDefaults();
+        setApiStatus("宿泊予約をご利用いただけます。", "success");
+      } catch (error) {
+        console.error(error);
+        setApiStatus(error.message || "予約受付設定を読み込めませんでした。", "error");
+        setMode(
+          "予約受付を確認できません",
+          "通信環境を確認し、再読み込みしてください。お急ぎの場合は施設へお問い合わせください。"
+        );
+        showOnlyMode("inquiry");
+      }
+    }
+
+    function cacheElements() {
+      [
+        "apiStatus", "headerFacilityName", "footerFacilityName", "homeLink", "supportLink",
+        "modeTitle", "modeDescription", "modeDetail",
+        "externalSection", "externalBookingLink", "inquirySection", "requestSection",
+        "bookingForm", "checkinDate", "checkoutDate", "checkinHint", "nightsHint",
+        "adults", "children", "infants", "unitField", "requestedUnit",
+        "guestName", "phone", "email", "emailLabel", "specialRequests", "bookingConsent",
+        "bookingSubmit", "bookingMessage", "bookingSuccess", "successRequestNumber",
+        "successCheckin", "successCheckout", "copyRequestNumber", "jumpToStatus",
+        "statusSection", "statusForm", "statusRequestNumber", "statusPhone", "statusSubmit",
+        "statusMessage", "statusResult", "statusBadge", "statusNumber", "statusCheckin",
+        "statusCheckout", "statusGuests", "statusReservationNumber", "statusGuidance",
+        "reservationLookupLink", "cancelRequestButton"
+      ].forEach((id) => { el[id] = document.getElementById(id); });
+    }
+
+    function bindEvents() {
+      el.bookingForm.addEventListener("submit", submitBookingRequest);
+      el.statusForm.addEventListener("submit", submitStatus);
+      el.cancelRequestButton.addEventListener("click", cancelBookingRequest);
+      el.copyRequestNumber.addEventListener("click", copyLastRequestNumber);
+      el.jumpToStatus.addEventListener("click", jumpToStatus);
+      el.checkinDate.addEventListener("change", onDateChange);
+      el.checkoutDate.addEventListener("change", updateNightHint);
+    }
+
+    function wireSupportLinks() {
+      const suffix = `?facility_code=${encodeURIComponent(CONFIG.FACILITY_CODE)}`;
+      const supportHref = `${CONFIG.SUPPORT_PAGE}${suffix}#inquiry`;
+      const homeHref = `${CONFIG.SUPPORT_PAGE}${suffix}`;
+      const reservationHref = `${CONFIG.RESERVATION_PAGE}${suffix}#reservation`;
+
+      el.homeLink.href = homeHref;
+      el.supportLink.href = supportHref;
+      el.reservationLookupLink.href = reservationHref;
+      document.querySelectorAll(".support-link-copy").forEach((a) => { a.href = supportHref; });
+    }
+
+    function applyFacility() {
+      const facility = state.facility || {};
+      const name = facility.facility_name || "DPROステイ";
+      document.title = `${name}｜宿泊予約`;
+      el.headerFacilityName.textContent = name;
+      el.footerFacilityName.textContent = name;
+    }
+
+    function applyBookingMode() {
+      const settings = state.bookingSettings || {};
+      let mode = String(settings.effective_mode || "inquiry").toLowerCase();
+
+      // Worker側でdirectはrequest/inquiryへfallbackするが、画面側でも安全側へ倒す。
+      if (mode === "direct") mode = "inquiry";
+      if (!["external", "request", "inquiry"].includes(mode)) mode = "inquiry";
+
+      state.effectiveMode = mode;
+
+      if (mode === "external") {
+        const url = safeHttpUrl(settings.external_booking_url);
+        if (!url) {
+          state.effectiveMode = "inquiry";
+          setMode("施設へ予約相談", "外部予約ページを確認できないため、施設への問い合わせをご案内します。");
+          showOnlyMode("inquiry");
+          return;
+        }
+        el.externalBookingLink.href = url;
+        setMode(
+          "外部予約ページで受付中",
+          "この施設は、現在利用している予約サイト・予約エンジンで宿泊予約を受け付けています。"
+        );
+        showOnlyMode("external");
+        return;
+      }
+
+      if (mode === "request") {
+        setMode(
+          "DPRO予約申込",
+          "希望日・人数を送信し、施設が空室を確認した後に正式予約となります。"
+        );
+        if (settings.ota_realtime_sync === false) {
+          el.modeDetail.hidden = false;
+          el.modeDetail.textContent = "外部予約サイトとリアルタイム在庫同期はしていません。施設確認後に予約を確定するため、申込時点では未確定です。";
+        }
+        showOnlyMode("request");
+        return;
+      }
+
+      setMode(
+        "施設へ予約相談",
+        "この施設では、宿泊希望を確認したうえで予約方法をご案内します。"
+      );
+      showOnlyMode("inquiry");
+    }
+
+    function setMode(title, description) {
+      el.modeTitle.textContent = title;
+      el.modeDescription.textContent = description;
+      el.modeDetail.hidden = true;
+      el.modeDetail.textContent = "";
+    }
+
+    function showOnlyMode(mode) {
+      el.externalSection.hidden = mode !== "external";
+      el.requestSection.hidden = mode !== "request";
+      el.inquirySection.hidden = mode !== "inquiry";
+      // 以前のDPRO予約申込を確認できるよう、statusは常時表示する。
+      el.statusSection.hidden = false;
+    }
+
+    function configureDates() {
+      const settings = state.bookingSettings || {};
+      const today = tokyoDateString();
+      const openDays = clampInt(settings.booking_open_days_ahead, 1, 730, 180);
+      const maxDate = addDays(today, openDays);
+      const minNights = clampInt(settings.minimum_stay_nights, 1, 90, 1);
+      const maxNights = clampInt(settings.maximum_stay_nights, minNights, 90, 30);
+
+      el.checkinDate.min = today;
+      el.checkinDate.max = maxDate;
+      el.checkoutDate.min = addDays(today, minNights);
+      el.checkoutDate.max = addDays(maxDate, maxNights);
+
+      el.checkinHint.textContent = `${today}から${maxDate}まで受付可能です。`;
+      el.nightsHint.dataset.minNights = String(minNights);
+      el.nightsHint.dataset.maxNights = String(maxNights);
+      el.nightsHint.textContent = `${minNights}泊〜${maxNights}泊で選択してください。`;
+
+      if (settings.require_booking_email === true) {
+        el.email.required = true;
+        el.emailLabel.classList.add("required");
+      } else {
+        el.email.required = false;
+        el.emailLabel.classList.remove("required");
+      }
+    }
+
+    function configureUnitOptions() {
+      const settings = state.bookingSettings || {};
+      const allow = settings.allow_unit_preference !== false;
+      el.unitField.hidden = !allow;
+      el.requestedUnit.innerHTML = '<option value="">おまかせ</option>';
+      if (!allow) return;
+
+      state.units
+        .filter((unit) => unit && unit.id && unit.operational_status === "active")
+        .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+        .forEach((unit) => {
+          const option = document.createElement("option");
+          option.value = unit.id;
+          option.textContent = `${unit.unit_name || unit.unit_code || "部屋・棟"}（定員${Number(unit.capacity || 1)}名）`;
+          el.requestedUnit.appendChild(option);
+        });
+    }
+
+    function fillGuestCountOptions() {
+      fillNumberSelect(el.adults, 1, 10, 1);
+      fillNumberSelect(el.children, 0, 10, 0);
+      fillNumberSelect(el.infants, 0, 10, 0);
+    }
+
+    function fillNumberSelect(select, min, max, selected) {
+      select.innerHTML = "";
+      for (let value = min; value <= max; value += 1) {
+        const option = document.createElement("option");
+        option.value = String(value);
+        option.textContent = `${value}名`;
+        option.selected = value === selected;
+        select.appendChild(option);
+      }
+    }
+
+    function onDateChange() {
+      const minNights = Number(el.nightsHint.dataset.minNights || 1);
+      const maxNights = Number(el.nightsHint.dataset.maxNights || 30);
+      if (!el.checkinDate.value) return;
+
+      el.checkoutDate.min = addDays(el.checkinDate.value, minNights);
+      el.checkoutDate.max = addDays(el.checkinDate.value, maxNights);
+
+      if (!el.checkoutDate.value || el.checkoutDate.value < el.checkoutDate.min || el.checkoutDate.value > el.checkoutDate.max) {
+        el.checkoutDate.value = el.checkoutDate.min;
+      }
+      updateNightHint();
+    }
+
+    function updateNightHint() {
+      const minNights = Number(el.nightsHint.dataset.minNights || 1);
+      const maxNights = Number(el.nightsHint.dataset.maxNights || 30);
+      if (!el.checkinDate.value || !el.checkoutDate.value) {
+        el.nightsHint.textContent = `${minNights}泊〜${maxNights}泊で選択してください。`;
+        return;
+      }
+      const nights = daysBetween(el.checkinDate.value, el.checkoutDate.value);
+      el.nightsHint.textContent = Number.isFinite(nights)
+        ? `${nights}泊（設定範囲：${minNights}〜${maxNights}泊）`
+        : `${minNights}泊〜${maxNights}泊で選択してください。`;
+    }
+
+    async function submitBookingRequest(event) {
+      event.preventDefault();
+      clearMessage(el.bookingMessage);
+
+      if (state.effectiveMode !== "request") {
+        showMessage(el.bookingMessage, "現在はDPRO予約申込モードではありません。", "error");
+        return;
+      }
+      if (!el.bookingConsent.checked) {
+        showMessage(el.bookingMessage, "入力情報の利用について同意してください。", "error");
+        el.bookingConsent.focus();
+        return;
+      }
+      if (!el.bookingForm.reportValidity()) return;
+      if (!validateStayDates()) return;
+
+      const key = state.submitKey || generateRequestKey();
+      state.submitKey = key;
+
+      const payload = {
+        facility_code: CONFIG.FACILITY_CODE,
+        checkin_date: el.checkinDate.value,
+        checkout_date: el.checkoutDate.value,
+        adults: Number(el.adults.value),
+        children: Number(el.children.value),
+        infants: Number(el.infants.value),
+        requested_unit_id: el.requestedUnit.value || null,
+        guest_name: el.guestName.value.trim(),
+        phone: el.phone.value.trim(),
+        email: el.email.value.trim() || null,
+        special_requests: el.specialRequests.value.trim() || null,
+        source: isLikelyLineBrowser() ? "line" : "web",
+        client_request_key: key
+      };
+
+      setButtonLoading(el.bookingSubmit, true, "送信しています");
+
+      try {
+        const data = await apiRequest("/api/public/booking/request", {
+          method: "POST",
+          body: payload,
+          headers: { "Idempotency-Key": key }
+        });
+
+        state.lastRequest = {
+          requestNumber: data.request_number,
+          phone: payload.phone,
+          checkin: payload.checkin_date,
+          checkout: payload.checkout_date
+        };
+
+        renderBookingSuccess(data, payload);
+        prefillStatus(data.request_number, payload.phone);
+        showMessage(el.bookingMessage, data.message || "予約申込を受け付けました。", "success");
+        el.bookingSuccess.hidden = false;
+
+        // 成功後は次回送信を別申込として扱う。二重クリック中は同一キーで保護される。
+        window.setTimeout(() => { state.submitKey = null; }, 1200);
+      } catch (error) {
+        showMessage(el.bookingMessage, error.message || "予約申込を送信できませんでした。", "error");
+      } finally {
+        setButtonLoading(el.bookingSubmit, false, "予約を申し込む");
+      }
+    }
+
+    function validateStayDates() {
+      const settings = state.bookingSettings || {};
+      const checkin = el.checkinDate.value;
+      const checkout = el.checkoutDate.value;
+      const minNights = clampInt(settings.minimum_stay_nights, 1, 90, 1);
+      const maxNights = clampInt(settings.maximum_stay_nights, minNights, 90, 30);
+      const nights = daysBetween(checkin, checkout);
+
+      if (!checkin || !checkout || !Number.isFinite(nights) || nights < minNights || nights > maxNights) {
+        showMessage(el.bookingMessage, `宿泊日数は${minNights}泊〜${maxNights}泊で選択してください。`, "error");
+        return false;
+      }
+      if (checkin < tokyoDateString()) {
+        showMessage(el.bookingMessage, "過去のチェックイン日は指定できません。", "error");
+        return false;
+      }
+      return true;
+    }
+
+    function renderBookingSuccess(data, payload) {
+      el.successRequestNumber.textContent = data.request_number || "申込番号を確認できません";
+      el.successCheckin.textContent = formatJapaneseDate(payload.checkin_date);
+      el.successCheckout.textContent = formatJapaneseDate(payload.checkout_date);
+    }
+
+    function prefillStatus(requestNumber, phone) {
+      el.statusRequestNumber.value = requestNumber || "";
+      el.statusPhone.value = phone || "";
+    }
+
+    function jumpToStatus() {
+      if (state.lastRequest) {
+        prefillStatus(state.lastRequest.requestNumber, state.lastRequest.phone);
+      }
+      el.statusSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      window.setTimeout(() => el.statusSubmit.focus(), 400);
+    }
+
+    async function copyLastRequestNumber() {
+      const value = state.lastRequest?.requestNumber || el.successRequestNumber.textContent.trim();
+      if (!value || value === "—") return;
+      try {
+        await navigator.clipboard.writeText(value);
+        showMessage(el.bookingMessage, "予約申込番号をコピーしました。", "success");
+      } catch {
+        showMessage(el.bookingMessage, `予約申込番号：${value}`, "success");
+      }
+    }
+
+    async function submitStatus(event) {
+      event.preventDefault();
+      clearMessage(el.statusMessage);
+      el.statusResult.hidden = true;
+      if (!el.statusForm.reportValidity()) return;
+
+      setButtonLoading(el.statusSubmit, true, "確認しています");
+      try {
+        const data = await apiRequest("/api/public/booking/request/status", {
+          method: "POST",
+          body: {
+            facility_code: CONFIG.FACILITY_CODE,
+            request_number: el.statusRequestNumber.value.trim(),
+            phone: el.statusPhone.value.trim()
+          }
+        });
+
+        state.currentStatus = data.booking_request || null;
+        renderStatus(state.currentStatus);
+      } catch (error) {
+        state.currentStatus = null;
+        showMessage(el.statusMessage, error.message || "申込状況を確認できませんでした。", "error");
+      } finally {
+        setButtonLoading(el.statusSubmit, false, "申込状況を確認する");
+      }
+    }
+
+    function renderStatus(item) {
+      if (!item) return;
+      const meta = statusMeta(item.request_status, item.booking_confirmed);
+      el.statusResult.dataset.tone = meta.tone;
+      el.statusBadge.textContent = meta.label;
+      el.statusNumber.textContent = item.request_number || "—";
+      el.statusCheckin.textContent = formatJapaneseDate(item.checkin_date);
+      el.statusCheckout.textContent = formatJapaneseDate(item.checkout_date);
+
+      const parts = [];
+      if (Number(item.adults)) parts.push(`大人${Number(item.adults)}名`);
+      if (Number(item.children)) parts.push(`子ども${Number(item.children)}名`);
+      if (Number(item.infants)) parts.push(`幼児${Number(item.infants)}名`);
+      el.statusGuests.textContent = parts.join("・") || "—";
+      el.statusReservationNumber.textContent = item.reservation_number || "未発行";
+      el.statusGuidance.textContent = meta.guidance;
+
+      const confirmed = item.booking_confirmed === true && Boolean(item.reservation_number);
+      el.reservationLookupLink.hidden = !confirmed;
+
+      const cancellable = ["new", "reviewing", "change_requested", "approved"].includes(item.request_status)
+        && !confirmed;
+      el.cancelRequestButton.hidden = !cancellable;
+      el.statusResult.hidden = false;
+      clearMessage(el.statusMessage);
+    }
+
+    async function cancelBookingRequest() {
+      const item = state.currentStatus;
+      if (!item) return;
+      if (!confirm("この予約申込を取り消しますか？")) return;
+
+      el.cancelRequestButton.disabled = true;
+      try {
+        const data = await apiRequest("/api/public/booking/request/cancel", {
+          method: "POST",
+          body: {
+            facility_code: CONFIG.FACILITY_CODE,
+            request_number: item.request_number,
+            phone: el.statusPhone.value.trim()
+          }
+        });
+
+        showMessage(el.statusMessage, "予約申込を取り消しました。", "success");
+        state.currentStatus = { ...item, request_status: data.request_status || "cancelled", booking_confirmed: false };
+        renderStatus(state.currentStatus);
+      } catch (error) {
+        showMessage(el.statusMessage, error.message || "予約申込を取り消せませんでした。", "error");
+      } finally {
+        el.cancelRequestButton.disabled = false;
+      }
+    }
+
+    function statusMeta(status, confirmed) {
+      if (confirmed || status === "converted") {
+        return { label: "予約確定", tone: "confirmed", guidance: "施設確認が完了し、正式予約となりました。正式予約番号で予約内容を確認できます。" };
+      }
+      const map = {
+        new: { label: "受付済み", tone: "normal", guidance: "予約申込を受け付けました。施設が空室・内容を確認しています。" },
+        reviewing: { label: "施設確認中", tone: "normal", guidance: "施設が空室・部屋・日程を確認しています。予約はまだ確定していません。" },
+        change_requested: { label: "確認・変更相談", tone: "normal", guidance: "施設から日程・部屋などの確認が必要な状態です。施設からの連絡をご確認ください。" },
+        approved: { label: "確定処理中", tone: "normal", guidance: "施設側で承認済みです。正式予約番号の発行処理を確認しています。" },
+        declined: { label: "受付不可", tone: "declined", guidance: "今回の内容では予約を確定できませんでした。別日程などを施設へご相談ください。" },
+        cancelled: { label: "取消済み", tone: "cancelled", guidance: "この予約申込は取り消されています。" }
+      };
+      return map[status] || { label: "確認中", tone: "normal", guidance: "施設へ現在の状況をご確認ください。" };
+    }
+
+    function applyDemoDefaults() {
+      if (query.get("demo") !== "1") return;
+      const today = tokyoDateString();
+      const checkin = addDays(today, 7);
+      const checkout = addDays(checkin, 1);
+      el.checkinDate.value = checkin;
+      el.checkoutDate.value = checkout;
+      el.guestName.value = "デモ予約 太郎";
+      el.phone.value = "090-9999-0000";
+      el.email.value = "stay-demo@example.com";
+      el.specialRequests.value = "営業デモ用の予約申込です。";
+      onDateChange();
+    }
+
+    async function apiRequest(path, options = {}) {
+      const init = {
+        method: options.method || "GET",
+        headers: {
+          "Accept": "application/json",
+          ...(options.body ? { "Content-Type": "application/json" } : {}),
+          ...(options.headers || {})
+        }
+      };
+      if (options.body) init.body = JSON.stringify(options.body);
+
+      let response;
+      try {
+        response = await fetch(`${CONFIG.API_BASE}${path}`, init);
+      } catch {
+        throw new Error("通信できませんでした。ネットワーク接続を確認してください。");
+      }
+
+      const text = await response.text();
+      let data = {};
+      if (text) {
+        try { data = JSON.parse(text); }
+        catch { throw new Error(`APIから不正な応答が返りました（HTTP ${response.status}）。`); }
+      }
+
+      if (!response.ok || data.ok === false) {
+        throw new Error(data.error || data.message || `処理に失敗しました（HTTP ${response.status}）。`);
+      }
+      return data;
+    }
+
+    function setApiStatus(message, tone) {
+      el.apiStatus.textContent = message;
+      el.apiStatus.dataset.tone = tone || "neutral";
+    }
+
+    function showMessage(target, message, tone) {
+      target.textContent = message || "";
+      target.className = `message${tone ? ` ${tone}` : ""}`;
+      target.hidden = !message;
+    }
+
+    function clearMessage(target) {
+      target.textContent = "";
+      target.className = "message";
+      target.hidden = true;
+    }
+
+    function setButtonLoading(button, loading, normalText) {
+      button.disabled = loading;
+      button.innerHTML = loading
+        ? '<span class="spinner" aria-hidden="true"></span><span>処理中</span>'
+        : normalText;
+    }
+
+    function generateRequestKey() {
+      const random = crypto?.randomUUID
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+      return `stay-b4-${CONFIG.FACILITY_CODE}-${random}`.slice(0, 190);
+    }
+
+    function safeHttpUrl(value) {
+      if (!value) return null;
+      try {
+        const url = new URL(String(value));
+        if (!["https:", "http:"].includes(url.protocol)) return null;
+        return url.href;
+      } catch {
+        return null;
+      }
+    }
+
+    function tokyoDateString() {
+      const parts = new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Tokyo",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).formatToParts(new Date());
+      const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+      return `${values.year}-${values.month}-${values.day}`;
+    }
+
+    function addDays(dateString, days) {
+      const [y, m, d] = String(dateString).split("-").map(Number);
+      const date = new Date(Date.UTC(y, m - 1, d + Number(days || 0)));
+      return date.toISOString().slice(0, 10);
+    }
+
+    function daysBetween(start, end) {
+      if (!start || !end) return NaN;
+      const a = Date.parse(`${start}T00:00:00Z`);
+      const b = Date.parse(`${end}T00:00:00Z`);
+      return (b - a) / 86400000;
+    }
+
+    function formatJapaneseDate(value) {
+      if (!value) return "—";
+      const date = new Date(`${value}T00:00:00+09:00`);
+      if (Number.isNaN(date.getTime())) return value;
+      return new Intl.DateTimeFormat("ja-JP", {
+        timeZone: "Asia/Tokyo",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        weekday: "short"
+      }).format(date);
+    }
+
+    function clampInt(value, min, max, fallback) {
+      const n = Number.parseInt(value, 10);
+      if (!Number.isFinite(n)) return fallback;
+      return Math.min(max, Math.max(min, n));
+    }
+
+    function isLikelyLineBrowser() {
+      return /\bLine\//i.test(navigator.userAgent || "");
+    }
+  </script>
+</body>
+</html>
