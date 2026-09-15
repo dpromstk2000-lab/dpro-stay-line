@@ -62,11 +62,86 @@ function isOnCanvas(el){const r=el.getBoundingClientRect(),vw=document.documentE
 async function renderStep(index){ensureUi();const token=++renderToken,step=STEPS[index];const card=$('dproTutCard'),hi=$('dproTutHighlight'),shade=$('dproTutShade');card.hidden=false;shade.hidden=false;$('dproTutCounter').textContent=`${index+1} / ${STEPS.length}`;$('dproTutStepId').textContent=step.id;$('dproTutTitle').textContent=step.title;$('dproTutCopy').textContent=step.copy;$('dproTutSafe').textContent=step.safe;$('dproTutProgress').style.width=`${((index+1)/STEPS.length)*100}%`;$('dproTutBack').disabled=index===0;$('dproTutNext').textContent=index===STEPS.length-1?'完了':'次へ';const result=await resolveTarget(step,token);if(token!==renderToken)return;currentTarget=result?.el||null;const fb=$('dproTutFallback');if(result){hi.hidden=false;fb.hidden=!result.fallback;fb.textContent=result.fallback?`安全な代替対象で表示中：${result.selector}`:'';positionHighlight();}else{hi.hidden=true;fb.hidden=false;fb.textContent='対象が非表示または画面外のため、ページ全体を安全な案内対象として続行します。';currentTarget=null;}clampCard();card.classList.add('dpro-tut-focus-ring');setTimeout(()=>card.classList.remove('dpro-tut-focus-ring'),500);$('dproTutTitle').focus({preventScroll:true});}
 function positionHighlight(){const hi=$('dproTutHighlight');if(!hi||hi.hidden||!currentTarget||!currentTarget.isConnected)return;const r=currentTarget.getBoundingClientRect(),vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight,p=6;const left=clamp(r.left-p,4,vw-8),top=clamp(r.top-p,4,vh-8),right=clamp(r.right+p,8,vw-4),bottom=clamp(r.bottom+p,8,vh-4);hi.style.left=`${left}px`;hi.style.top=`${top}px`;hi.style.width=`${Math.max(8,right-left)}px`;hi.style.height=`${Math.max(8,bottom-top)}px`;}
 function hideTutorial(){renderToken++;currentTarget=null;if($('dproTutCard'))$('dproTutCard').hidden=true;if($('dproTutHighlight'))$('dproTutHighlight').hidden=true;if($('dproTutShade'))$('dproTutShade').hidden=true;}
-function beginDrag(e){if(e.target instanceof Element&&e.target.closest('button,a,input,select,textarea,[role=\"button\"]'))return;if(e.button!==undefined&&e.button!==0)return;const card=$('dproTutCard');if(!card||card.hidden)return;const r=card.getBoundingClientRect();drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};card.style.left=`${r.left}px`;card.style.top=`${r.top}px`;card.style.right='auto';card.style.bottom='auto';try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}e.preventDefault();}
+function beginDrag(e){if(e.target instanceof Element&&e.target.closest('button,a,input,select,textarea,[role="button"]'))return;if(e.button!==undefined&&e.button!==0)return;const card=$('dproTutCard');if(!card||card.hidden)return;const r=card.getBoundingClientRect();drag={id:e.pointerId,dx:e.clientX-r.left,dy:e.clientY-r.top};card.style.left=`${r.left}px`;card.style.top=`${r.top}px`;card.style.right='auto';card.style.bottom='auto';try{e.currentTarget.setPointerCapture(e.pointerId);}catch{}e.preventDefault();}
 function moveDrag(e){if(!drag||e.pointerId!==drag.id)return;const card=$('dproTutCard'),vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;const x=clamp(e.clientX-drag.dx,4,vw-card.offsetWidth-4),y=clamp(e.clientY-drag.dy,4,vh-card.offsetHeight-4);card.style.left=`${x}px`;card.style.top=`${y}px`;e.preventDefault();}
 function endDrag(e){if(!drag||e.pointerId!==drag.id)return;try{e.currentTarget.releasePointerCapture(e.pointerId);}catch{}drag=null;clampCard();}
 function clampCard(){const card=$('dproTutCard');if(!card||card.hidden)return;const r=card.getBoundingClientRect(),vw=document.documentElement.clientWidth,vh=document.documentElement.clientHeight;let left=r.left,top=r.top;if(r.right>vw-4)left=vw-r.width-4;if(r.bottom>vh-4)top=vh-r.height-4;if(left<4)left=4;if(top<4)top=4;if(card.style.left||card.style.top){card.style.left=`${Math.max(4,left)}px`;card.style.top=`${Math.max(4,top)}px`;card.style.right='auto';card.style.bottom='auto';}}
 function boot(){ensureUi();const s=readState();if(s.active&&!s.completed){const idx=clamp(Number(s.step)||0,0,STEPS.length-1),step=STEPS[idx];if(samePage(step.route))renderStep(idx);}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 window.DPROStayTutorial={version:VERSION,steps:STEPS.map(x=>({...x})),guideCount:STEPS.length,start:()=>start(false),resume,replay,openGuide,state:()=>({...readState()}),debug:()=>({targetSelector:currentTarget?.id?`#${currentTarget.id}`:currentTarget?.tagName||null,cardHidden:$('dproTutCard')?.hidden,guideHidden:$('dproGuideCenter')?.hidden})};
+})();
+
+// STAY-FINAL-NAV-1 / BRUSHUP-5-R1 integration
+(()=>{
+'use strict';
+
+function pageNameNow(){
+  return location.pathname.split('/').filter(Boolean).pop() || 'index.html';
+}
+function carryQuery(){
+  const src=new URLSearchParams(location.search);
+  const out=new URLSearchParams();
+  const facility=src.get('facility_code');
+  if(facility) out.set('facility_code',facility);
+  if(src.get('demo')==='1') out.set('demo','1');
+  const text=out.toString();
+  return text?`?${text}`:'';
+}
+function ensureIntegrationStyle(){
+  if(document.getElementById('stayFinalNavStyle')) return;
+  const style=document.createElement('style');
+  style.id='stayFinalNavStyle';
+  style.textContent=`
+    a.navbtn[data-dpro-booking-console]{text-decoration:none}
+    @media(min-width:761px){
+      .action-nav[data-stay-booking-integrated="1"]{grid-template-columns:repeat(5,minmax(0,1fr))}
+    }
+    @media(min-width:761px) and (max-width:980px){
+      .action-nav[data-stay-booking-integrated="1"]{grid-template-columns:repeat(3,minmax(0,1fr))}
+    }
+    @media(max-width:760px){
+      .action-nav[data-stay-booking-integrated="1"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+  `;
+  document.head.appendChild(style);
+}
+function addOwnerBookingConsole(){
+  if(pageNameNow()!=='owner.html') return;
+  if(document.querySelector('[data-dpro-booking-console]')) return;
+  const reservationButton=document.querySelector('.navbtn[data-view="reservations"]');
+  if(!reservationButton) return;
+
+  ensureIntegrationStyle();
+  const link=document.createElement('a');
+  link.className='navbtn';
+  link.setAttribute('data-dpro-booking-console','1');
+  link.href=`owner-booking.html${carryQuery()}`;
+  link.innerHTML='<span class="nicon">予</span><span>予約申込</span><span class="count">新</span>';
+  link.setAttribute('aria-label','予約申込・予約受付設定を開く');
+  reservationButton.insertAdjacentElement('afterend',link);
+}
+function addGuestBookingEntry(){
+  if(pageNameNow()!=='index.html') return;
+  if(document.querySelector('[data-dpro-guest-booking]')) return;
+  const nav=document.querySelector('.action-nav');
+  if(!nav) return;
+
+  ensureIntegrationStyle();
+  nav.setAttribute('data-stay-booking-integrated','1');
+  const link=document.createElement('a');
+  link.className='action-chip';
+  link.setAttribute('data-dpro-guest-booking','1');
+  link.href=`booking.html${carryQuery()}`;
+  link.innerHTML='<span class="chip-icon" aria-hidden="true">予</span><strong>宿泊予約</strong><small>空き状況から申込</small>';
+  nav.insertBefore(link,nav.firstElementChild);
+}
+function integrate(){
+  addOwnerBookingConsole();
+  addGuestBookingEntry();
+}
+if(document.readyState==='loading'){
+  document.addEventListener('DOMContentLoaded',integrate,{once:true});
+}else{
+  integrate();
+}
 })();
